@@ -91,7 +91,7 @@ function generateEmailHTML(matchedDrinks: DrinkRecommendation[], preferences: Wi
           <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
             <h3 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 600;">${recommendation.drink.name}</h3>
             <span style="background: #10b981; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">
-              ${recommendation.score}% Match
+              ${Math.min(100, recommendation.score)}% Match
             </span>
           </div>
           <p style="margin: 0 0 12px 0; color: #64748b; font-size: 14px; line-height: 1.4;">${recommendation.drink.description}</p>

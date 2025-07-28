@@ -14,7 +14,7 @@ interface AIChatModalProps {
 }
 
 export function AIChatModal({ isOpen, onClose, onComplete }: AIChatModalProps) {
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [] = useState(() => crypto.randomUUID());
 
   const handlePreferencesReady = (aiPreferences: Record<string, unknown>) => {
     if (onComplete) {

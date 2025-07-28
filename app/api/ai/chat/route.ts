@@ -21,19 +21,19 @@ function getSmartDrinkMatches(preferences: {
     let score = 0;
     const matchReasons = [];
 
-    // Category match (high priority)
+    // Category match (very high priority)
     if (preferences.category && preferences.category !== 'any' && preferences.category !== 'featured') {
       if (drink.category === preferences.category) {
-        score += 30;
-        matchReasons.push('category');
+        score += 50; // Much higher bonus for correct category
+        matchReasons.push('perfect-category');
       } else {
-        // Heavy penalty for wrong category (especially non-alcoholic vs alcoholic)
+        // Heavy penalties for wrong category to strongly discourage cross-category suggestions
         if (preferences.category === 'non-alcoholic' && drink.category !== 'non-alcoholic') {
-          score -= 30; // Major penalty for alcoholic when non-alcoholic requested
+          score -= 50; // Major penalty for alcoholic when non-alcoholic requested
         } else if (preferences.category !== 'non-alcoholic' && drink.category === 'non-alcoholic') {
-          score -= 20; // Penalty for non-alcoholic when alcoholic requested
+          score -= 40; // Penalty for non-alcoholic when alcoholic requested
         } else {
-          score -= 10; // Minor penalty for wrong alcoholic category
+          score -= 30; // Heavy penalty for wrong alcoholic category
         }
       }
     } else {
@@ -44,7 +44,7 @@ function getSmartDrinkMatches(preferences: {
     if (preferences.flavor && preferences.flavor !== 'any') {
       const flavorMap = {
         'sweet': ['sweet', 'fruity'],
-        'sour': ['sour', 'tart', 'citrus'],
+        'sour': ['sour', 'tart', 'citrus', 'funky', 'acidic'],
         'bitter': ['bitter'],
         'smoky': ['smoky'],
         'crisp': ['crisp', 'fresh', 'clean', 'refreshing'],
@@ -52,8 +52,13 @@ function getSmartDrinkMatches(preferences: {
       };
       const targetFlavors = flavorMap[preferences.flavor as keyof typeof flavorMap] || [preferences.flavor];
       if (drink.flavor_profile?.some(flavor => targetFlavors.includes(flavor))) {
-        score += 25;
-        matchReasons.push('flavor');
+        score += 30; // Increased flavor match bonus
+        matchReasons.push('perfect-flavor');
+      } else {
+        // Small penalty for flavor mismatch within correct category
+        if (preferences.category && drink.category === preferences.category) {
+          score -= 5; // Minor penalty to encourage better flavor matches
+        }
       }
     }
 
@@ -165,16 +170,36 @@ function getSmartDrinkMatches(preferences: {
       }
     }
 
-    return { drink, score, matchReasons, allergyCompatible };
+    // Cap score at 100 to prevent percentages over 100%
+    const cappedScore = Math.min(100, score);
+    
+    return { drink, score: cappedScore, matchReasons, allergyCompatible };
   });
 
   // Sort by score
   const sortedDrinks = scoredDrinks.sort((a, b) => b.score - a.score);
 
-  // Categorize matches
-  const perfectMatches = sortedDrinks.filter(item => item.score >= 60 && item.allergyCompatible);
-  const goodMatches = sortedDrinks.filter(item => item.score >= 30 && item.score < 60 && item.allergyCompatible);
-  const otherMatches = sortedDrinks.filter(item => item.score >= 10 && item.score < 30 && item.allergyCompatible);
+  // Categorize matches with adjusted thresholds for better category enforcement
+  const perfectMatches = sortedDrinks.filter(item => item.score >= 70 && item.allergyCompatible);
+  const goodMatches = sortedDrinks.filter(item => item.score >= 40 && item.score < 70 && item.allergyCompatible);
+  const otherMatches = sortedDrinks.filter(item => item.score >= 20 && item.score < 40 && item.allergyCompatible);
+  
+  // For specific category requests (like beer), prioritize in-category matches even with lower scores
+  if (preferences.category && preferences.category !== 'any' && preferences.category !== 'featured') {
+    const categoryMatches = sortedDrinks.filter(item => 
+      item.drink.category === preferences.category && item.allergyCompatible && item.score > 0
+    );
+    
+    // If we have good category matches, use those instead of cross-category
+    if (categoryMatches.length >= 3) {
+      const topCategoryMatches = categoryMatches.slice(0, 8);
+      return {
+        perfectMatches: topCategoryMatches.filter(item => item.score >= 70).slice(0, 3),
+        goodMatches: topCategoryMatches.filter(item => item.score >= 40 && item.score < 70).slice(0, 5),
+        otherMatches: topCategoryMatches.filter(item => item.score >= 20 && item.score < 40).slice(0, 3)
+      };
+    }
+  }
 
   return {
     perfectMatches: perfectMatches.slice(0, 5),
@@ -278,6 +303,20 @@ export async function POST(request: NextRequest) {
     - Always make sure to ask for allergies!
     - For "surprise me" requests: default to cocktail, medium strength, casual occasion, no allergies, and pick a random flavor
     
+    SPECIFIC DRINK REQUESTS - Extract category and flavor when users ask for specific drinks:
+    
+    BEER STYLES: "sour beer" → beer + sour, "IPA" → beer + bitter, "stout" → beer + bitter, "lager" → beer + crisp, "wheat beer" → beer + smooth, "pilsner" → beer + crisp
+    
+    COCKTAIL STYLES: "moscow mule" → cocktail + sour, "old fashioned" → cocktail + smoky, "gin gimlet" → cocktail + bitter, "whiskey sour" → cocktail + sour, "negroni" → cocktail + bitter, "manhattan" → cocktail + smoky, "white russian" → cocktail + sweet, "margarita" → cocktail + sour, "mojito" → cocktail + crisp, "martini" → cocktail + bitter
+    
+    WINE STYLES: "rosé" → wine + sweet, "red wine" → wine + smoky, "white wine" → wine + crisp, "sauvignon blanc" → wine + crisp, "pinot noir" → wine + smooth, "cabernet" → wine + smoky, "chardonnay" → wine + smooth, "sparkling" → wine + crisp
+    
+    SPIRIT STYLES: "bourbon" → spirit + smoky, "whiskey" → spirit + smoky, "vodka" → spirit + smooth, "gin" → spirit + bitter, "tequila" → spirit + bitter, "rum" → spirit + sweet, "scotch" → spirit + smoky
+    
+    NON-ALCOHOLIC: "mocktail" → non-alcoholic + (ask flavor), "virgin mojito" → non-alcoholic + crisp, "shirley temple" → non-alcoholic + sweet
+    
+    - When someone asks for a specific drink style, acknowledge it with attitude but stay focused on getting their complete preferences
+    
     For ongoing conversation, provide JSON like this (but hide it behind Carla's personality):
     {
       "message": "Alright, what kinda flavors you want? And don't say 'surprise me' or you're gettin' tap water.",
@@ -312,6 +351,42 @@ export async function POST(request: NextRequest) {
       "confidence": 95,
       "ready": true,
       "message": "Gluten-free beer? Why don't you just ask me to turn water into wine while you're at it? Fine, I got some options that won't make you sick:",
+      "quickButtons": []
+    }
+
+    For specific beer requests (like sour beer):
+    {
+      "preferences": { "category": "beer", "flavor": "sour", "strength": "medium", "occasion": "casual", "allergies": ["none"] },
+      "confidence": 95,
+      "ready": true,
+      "message": "Sour beer, huh? Most people can't handle the pucker. Lucky for you, I know my way around the weird stuff:",
+      "quickButtons": []
+    }
+
+    For cocktail requests (like Old Fashioned):
+    {
+      "preferences": { "category": "cocktail", "flavor": "smoky", "strength": "strong", "occasion": "business", "allergies": ["none"] },
+      "confidence": 95,
+      "ready": true,
+      "message": "Old Fashioned? Now we're talkin'. A real drink for someone with actual taste buds:",
+      "quickButtons": []
+    }
+
+    For wine requests (like Pinot Noir):
+    {
+      "preferences": { "category": "wine", "flavor": "smooth", "strength": "medium", "occasion": "romantic", "allergies": ["none"] },
+      "confidence": 95,
+      "ready": true,
+      "message": "Pinot Noir? Somebody's tryin' to impress. At least you didn't ask for White Zin:",
+      "quickButtons": []
+    }
+
+    For spirit requests (like bourbon):
+    {
+      "preferences": { "category": "spirit", "flavor": "smoky", "strength": "strong", "occasion": "business", "allergies": ["none"] },
+      "confidence": 95,
+      "ready": true,
+      "message": "Bourbon, straight up? Finally, someone who knows what they want:",
       "quickButtons": []
     }
 
@@ -359,7 +434,13 @@ export async function POST(request: NextRequest) {
     const responseText = response.text();
 
     // Try to extract JSON preferences if present
-    let preferences = null;
+    let preferences: {
+      category?: string;
+      flavor?: string;
+      strength?: string;
+      occasion?: string;
+      allergies?: string[];
+    } | null = null;
     let confidence = 0;
     let ready = false;
     let extractedMessage = responseText;
@@ -420,8 +501,7 @@ export async function POST(request: NextRequest) {
             })));
           }
 
-          // If we have very few matches and the request was problematic (like gluten-free beer), 
-          // provide better contextual alternatives
+          // If we have very few matches and the request was problematic, provide better contextual alternatives
           if (allMatches.length < 3) {
             console.log('Low match count, providing contextual alternatives');
             
@@ -443,6 +523,57 @@ export async function POST(request: NextRequest) {
                     matchQuality: 'alternative',
                     matchReasons: ['gluten-free-alternative'],
                     score: 25
+                  });
+                }
+              });
+            }
+            
+            // For category-specific requests with low matches, suggest similar alternatives
+            else if (allMatches.length < 3 && preferences && preferences.category) {
+              let categoryAlternatives: any[] = [];
+              const prefs = preferences; // Type assertion for non-null
+              
+              if (prefs.category === 'beer') {
+                categoryAlternatives = drinks.filter(drink => 
+                  (drink.category === 'cocktail' || drink.category === 'wine') &&
+                  drink.strength === prefs.strength &&
+                  (!prefs.allergies || prefs.allergies.length === 0 || prefs.allergies.includes('none'))
+                ).slice(0, 3);
+              } else if (prefs.category === 'cocktail') {
+                categoryAlternatives = drinks.filter(drink => 
+                  (drink.category === 'wine' || drink.category === 'spirit') &&
+                  drink.flavor_profile?.some(flavor => 
+                    prefs.flavor === 'any' || (prefs.flavor && flavor.includes(prefs.flavor))
+                  )
+                ).slice(0, 3);
+              } else if (prefs.category === 'wine') {
+                categoryAlternatives = drinks.filter(drink => 
+                  (drink.category === 'cocktail' || drink.category === 'spirit') &&
+                  drink.strength === prefs.strength
+                ).slice(0, 3);
+              } else if (prefs.category === 'spirit') {
+                categoryAlternatives = drinks.filter(drink => 
+                  drink.category === 'cocktail' &&
+                  drink.flavor_profile?.some(flavor => 
+                    prefs.flavor === 'any' || (prefs.flavor && flavor.includes(prefs.flavor))
+                  )
+                ).slice(0, 3);
+              } else if (prefs.category === 'non-alcoholic') {
+                categoryAlternatives = drinks.filter(drink => 
+                  drink.category === 'cocktail' &&
+                  drink.strength === 'light'
+                ).slice(0, 3);
+              }
+              
+              console.log(`Found ${categoryAlternatives.length} alternatives for ${prefs.category} request`);
+              
+              categoryAlternatives.forEach(drink => {
+                if (allMatches.length < 12) {
+                  allMatches.push({
+                    ...drink,
+                    matchQuality: 'alternative',
+                    matchReasons: ['similar-style-alternative'],
+                    score: 20
                   });
                 }
               });
@@ -491,9 +622,19 @@ export async function POST(request: NextRequest) {
             
             // Add alternative options with proper title
             if (alternativeCount > 0) {
-              // Special messaging for alternative recommendations
+              // Special messaging for alternative recommendations by category
               if (preferences.category === 'beer' && preferences.allergies?.includes('gluten')) {
                 extractedMessage += `\n\n💡 **Also worth trying (gluten-free alternatives):**`;
+              } else if (preferences.category === 'beer') {
+                extractedMessage += `\n\n💡 **If you're open to other options:**`;
+              } else if (preferences.category === 'cocktail') {
+                extractedMessage += `\n\n💡 **Similar spirits & wines you might enjoy:**`;
+              } else if (preferences.category === 'wine') {
+                extractedMessage += `\n\n💡 **Alternative cocktails & spirits:**`;
+              } else if (preferences.category === 'spirit') {
+                extractedMessage += `\n\n💡 **Mixed drink alternatives:**`;
+              } else if (preferences.category === 'non-alcoholic') {
+                extractedMessage += `\n\n💡 **Light alcoholic alternatives:**`;
               } else {
                 extractedMessage += `\n\n💡 **Also worth trying:**`;
               }
@@ -516,6 +657,23 @@ export async function POST(request: NextRequest) {
       
       if (hasYesNoQuestion) {
         quickButtons = ['Yes', 'No'];
+      } else {
+        // Generate context-aware quick buttons based on the message content
+        const messageLC = extractedMessage.toLowerCase();
+        
+        if (messageLC.includes('what type') || messageLC.includes('what kind')) {
+          if (messageLC.includes('drink')) {
+            quickButtons = ['Cocktail', 'Beer', 'Wine', 'Spirit', 'Non-alcoholic'];
+          } else if (messageLC.includes('flavor')) {
+            quickButtons = ['Sweet', 'Sour', 'Bitter', 'Smoky', 'Crisp'];
+          }
+        } else if (messageLC.includes('occasion') || messageLC.includes('for what')) {
+          quickButtons = ['Casual', 'Celebration', 'Date Night', 'Business', 'Just Exploring'];
+        } else if (messageLC.includes('strength') || messageLC.includes('how strong')) {
+          quickButtons = ['Light', 'Medium', 'Strong', 'Surprise me'];
+        } else if (messageLC.includes('allerg') || messageLC.includes('restriction')) {
+          quickButtons = ['None', 'Gluten-free', 'Dairy-free', 'Tell you later'];
+        }
       }
     }
 

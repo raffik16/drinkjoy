@@ -92,40 +92,33 @@ export function Hero({ onAIChatToggle }: HeroProps) {
             >
               Discover your perfect drink with smart recommendations! Get personalized cocktail, beer, wine, and spirit suggestions based on your taste preferences, allergies, and occasion.
             </motion.p>
-            <motion.p 
-              className="text-lg text-white/80 mb-8 font-medium drop-shadow-md"
+            
+            {/* Trust Signals */}
+            <motion.div
+              className="flex flex-wrap gap-4 mb-8 justify-center lg:justify-start"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 1.2 }}
             >
-              <motion.span
-                animate={!isUserInteracting ? { 
-                  textShadow: [
-                    "0 0 0px rgba(255,255,255,0.8)",
-                    "0 0 10px rgba(255,255,255,0.8)",
-                    "0 0 0px rgba(255,255,255,0.8)"
-                  ]
-                } : {}}
-                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2 }}
-              >
-                Powered by AI for the perfect match
-              </motion.span>
-            </motion.p>
+              <div className="flex items-center gap-2 text-white/90">
+                <span className="text-2xl">🎯</span>
+                <span className="text-sm font-medium">Smart Matching</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/90">
+                <span className="text-2xl">⚡</span>
+                <span className="text-sm font-medium">Instant AI Results</span>
+              </div>
+              <div className="flex items-center gap-2 text-white/90">
+                <span className="text-2xl">🔒</span>
+                <span className="text-sm font-medium">Allergy Safe</span>
+              </div>
+            </motion.div>
             <motion.div 
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mx-4"
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.4 }}
             >
-              <motion.button
-                onClick={onAIChatToggle}
-                className="bg-gradient-to-r from-purple-600 to-purple-500 text-white px-8 py-4 rounded-full hover:from-purple-700 hover:to-purple-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Bot className="w-5 h-5" />
-                Chat with Carla Joy
-              </motion.button>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -134,12 +127,35 @@ export function Hero({ onAIChatToggle }: HeroProps) {
                   href="/app"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-white text-gray-900 px-8 py-4 rounded-full hover:bg-gray-50 transition-colors duration-200 font-semibold text-lg shadow-lg hover:shadow-xl text-center inline-block border border-gray-200"
+                  className="bg-gradient-to-r from-purple-600 to-purple-500 text-white px-10 py-5 rounded-full hover:from-purple-700 hover:to-purple-600 transition-all duration-200 font-bold text-xl shadow-xl hover:shadow-2xl text-center inline-block whitespace-nowrap"
                 >
-                  Try The App
+                  Find My Perfect Drink →
                 </Link>
               </motion.div>
+              
+              <motion.button
+                onClick={onAIChatToggle}
+                className="text-white/90 hover:text-white px-6 py-4 rounded-full transition-all duration-200 font-medium text-lg flex items-center justify-center gap-2 hover:bg-white/10 whitespace-nowrap"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Bot className="w-5 h-5" />
+                or Chat with AI
+              </motion.button>
             </motion.div>
+            
+            {/* Powered by AI Badge */}
+            <motion.p 
+              className="text-sm text-white/70 mt-6 flex items-center gap-2 justify-center lg:justify-start"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 1.6 }}
+            >
+              <span className="inline-flex items-center gap-1 bg-white/10 backdrop-blur-sm px-3 py-1 rounded-full">
+                <span className="text-purple-300">✨</span>
+                Powered by AI for perfect matches
+              </span>
+            </motion.p>
           </motion.div>
           
           {/* Interactive Mobile Preview */}
