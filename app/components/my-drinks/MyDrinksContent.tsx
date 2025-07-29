@@ -6,23 +6,32 @@ import { Mail, Trash2, Search, Filter } from 'lucide-react';
 import Image from 'next/image';
 import drinksData from '@/data/drinks';
 import { EmailShareModal } from '@/app/components/ui/EmailShareModal';
+import { DrinkCategory, Drink } from '@/app/types/drinks';
 
 const drinks = (drinksData?.drinks || drinksData || []);
 
 interface SavedDrink {
   id: string;
   name: string;
-  category: string;
+  category: DrinkCategory;
   description: string;
-  image_url?: string;
-  abv?: number;
+  image_url: string;
+  abv: number;
   flavor_profile?: string[];
-  ingredients?: string[];
+  ingredients: string[];
   strength?: string;
   weather_match?: any;
   occasions?: string[];
   serving_suggestions?: string[];
   dateSaved: string;
+  glass_type?: string;
+  preparation?: string;
+  happy_hour?: boolean;
+  happy_hour_price?: string;
+  happy_hour_times?: string;
+  featured?: boolean;
+  funForTwentyOne?: boolean;
+  goodForBDay?: boolean;
 }
 
 interface MyDrinksContentProps {
@@ -231,7 +240,7 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
             setShareModalOpen(false);
             setDrinkToShare(null);
           }}
-          drink={drinkToShare}
+          drink={drinkToShare as Drink}
         />
       )}
     </div>

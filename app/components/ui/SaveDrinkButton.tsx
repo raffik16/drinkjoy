@@ -10,7 +10,7 @@ import { EmailShareModal } from './EmailShareModal';
 interface SaveDrinkButtonProps {
   drinkId: string;
   drinkName: string;
-  drink?: Drink; // Optional full drink object for email sharing
+  drink?: Drink;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   showShareOption?: boolean;
