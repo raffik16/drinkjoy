@@ -11,26 +11,36 @@ export function CTA() {
     <section className="py-20 bg-gradient-to-r from-purple-600 to-purple-500 text-white">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
         <h2 className="text-4xl lg:text-5xl font-bold mb-6">
-          Start Discovering Your Perfect Drink Today!
+          Ready to Find Your Perfect Drink?
         </h2>
         <p className="text-xl mb-8 opacity-90 leading-relaxed">
-          Join thousands of happy drinkers and get personalized recommendations tailored just for you
+          Join thousands of happy drinkers discovering their perfect matches every day
         </p>
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <button 
-            onClick={() => setIsSignupModalOpen(true)}
-            className="bg-gradient-to-r from-purple-600 to-purple-500 text-white px-8 py-4 rounded-full hover:from-purple-700 hover:to-purple-600 transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-          >
-            Get Started Free
-          </button>
+        <div className="flex flex-col gap-6 items-center">
           <Link 
             href="/app"
             target="_blank"
             rel="noopener noreferrer"
-            className="border-2 border-white text-white px-8 py-4 rounded-full hover:bg-gradient-to-r hover:from-purple-600 hover:to-purple-500 hover:border-purple-500 transition-all duration-200 font-semibold text-lg text-center"
+            className="bg-white text-purple-600 px-10 py-5 rounded-full hover:bg-gray-100 transition-all duration-200 font-bold text-xl shadow-xl hover:shadow-2xl transform hover:-translate-y-1 inline-block whitespace-nowrap"
           >
-            Try Demo
+            Find My Perfect Drink →
           </Link>
+          
+          {/* Social Proof */}
+          <div className="flex items-center gap-6 text-white/90 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-yellow-300">⭐⭐⭐⭐⭐</span>
+              <span>4.9/5 Rating</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>🍹</span>
+              <span>Quality Drinks</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span>🎯</span>
+              <span>Smart Matching</span>
+            </div>
+          </div>
         </div>
       </div>
       

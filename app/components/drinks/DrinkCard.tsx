@@ -135,7 +135,7 @@ export const DrinkCard: React.FC<DrinkCardProps> = ({
                   recommendation.score > 70 ? 'text-green-600' : 
                   recommendation.score > 40 ? 'text-yellow-600' : 'text-gray-600'
                 )}>
-                  {recommendation.score}%
+                  {Math.min(100, recommendation.score)}%
                 </span>
               </div>
               

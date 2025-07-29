@@ -5,11 +5,14 @@ import { motion } from 'framer-motion';
 import { DrinkRecommendation } from '@/app/types/drinks';
 import { WizardPreferences, AllergyType } from '@/app/types/wizard';
 import { WeatherData } from '@/app/types/weather';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Bookmark } from 'lucide-react';
 import Image from 'next/image';
 import LikeButton from '@/app/components/ui/LikeButton';
+import SaveDrinkButton from '@/app/components/ui/SaveDrinkButton';
 import DrinkStatsDisplay from '@/app/components/ui/DrinkStatsDisplay';
 import EmailCaptureForm from '@/app/components/ui/EmailCaptureForm';
+import { EmailCaptureModal } from '@/app/components/email-capture/EmailCaptureModal';
+import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { getAdditionalDrinksFromAllCategories } from '@/lib/drinkMatcher';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
 
@@ -35,6 +38,11 @@ export default function WizardFullResults({
   const [showNoMoreDrinksMessage, setShowNoMoreDrinksMessage] = useState(false);
   const [hasExpandedToAllCategories, setHasExpandedToAllCategories] = useState(false);
   const [isAutoLoading, setIsAutoLoading] = useState(false);
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [hasShownEmailModal, setHasShownEmailModal] = useState(false);
+  const [showMyDrinksPanel, setShowMyDrinksPanel] = useState(false);
+  const [hasSavedDrinks, setHasSavedDrinks] = useState(false);
+  const [triggerAnimation, setTriggerAnimation] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
   const loadDrinksFromAllCategories = useCallback(async (isAutoLoad = false) => {
@@ -76,7 +84,39 @@ export default function WizardFullResults({
     // Always show the button to expand search
     setHasMoreDrinks(true);
     setIsCheckingMore(false);
-  }, [recommendations, preferences]);
+    
+    // Check if user has saved drinks before
+    const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
+    setHasSavedDrinks(savedDrinks.length > 0);
+    
+    // Show email modal after a short delay if not already shown
+    const hasSeenModal = localStorage.getItem('drinkjoy-email-modal-shown');
+    if (!hasSeenModal && !hasShownEmailModal && recommendations.length > 0) {
+      const timer = setTimeout(() => {
+        setShowEmailModal(true);
+        setHasShownEmailModal(true);
+        localStorage.setItem('drinkjoy-email-modal-shown', 'true');
+        // Clear the flag after 24 hours
+        setTimeout(() => {
+          localStorage.removeItem('drinkjoy-email-modal-shown');
+        }, 24 * 60 * 60 * 1000);
+      }, 2000); // Show after 2 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [recommendations, preferences, hasShownEmailModal]);
+
+  // Listen for drink saved events to trigger animation
+  useEffect(() => {
+    const handleDrinkSaved = () => {
+      setHasSavedDrinks(true); // Update saved drinks state
+      setTriggerAnimation(true);
+      setTimeout(() => setTriggerAnimation(false), 1000); // Reset after animation
+    };
+
+    window.addEventListener('drinkSaved', handleDrinkSaved);
+    return () => window.removeEventListener('drinkSaved', handleDrinkSaved);
+  }, []);
 
   // Intersection Observer for auto-loading more drinks
   useEffect(() => {
@@ -129,19 +169,84 @@ export default function WizardFullResults({
             Found {allRecommendations.length} drinks just for you!
           </div>
         </div>
-        <div className="w-9" /> {/* Spacer for centering */}
+        {hasSavedDrinks && (
+          <motion.button
+            onClick={() => setShowMyDrinksPanel(true)}
+            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors relative"
+            title="View Saved Drinks"
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ 
+              scale: triggerAnimation ? [1, 1.3, 1.1, 1.2, 1] : 1, 
+              opacity: 1,
+              rotate: triggerAnimation ? [0, -8, 8, -4, 0] : 0
+            }}
+            transition={{ 
+              delay: triggerAnimation ? 0 : 0.5, 
+              type: triggerAnimation ? "tween" : "spring", 
+              stiffness: triggerAnimation ? 400 : 300,
+              duration: triggerAnimation ? 0.8 : undefined,
+              ease: triggerAnimation ? "easeInOut" : undefined
+            }}
+          >
+            <motion.div
+              animate={{ 
+                scale: triggerAnimation ? [1, 1.4, 1.2, 1.3, 1] : 1
+              }}
+              transition={{ 
+                duration: triggerAnimation ? 0.8 : 0,
+                type: triggerAnimation ? "tween" : "spring",
+                ease: triggerAnimation ? "easeInOut" : undefined,
+                stiffness: 400
+              }}
+            >
+              <Bookmark className="w-5 h-5" />
+            </motion.div>
+            {/* Notification dot */}
+            <motion.div 
+              className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white animate-pulse"
+              animate={{
+                scale: triggerAnimation ? [1, 1.6, 1.3, 1.5, 1] : 1
+              }}
+              transition={{
+                duration: triggerAnimation ? 0.8 : 0,
+                type: triggerAnimation ? "tween" : "spring",
+                ease: triggerAnimation ? "easeInOut" : undefined,
+                stiffness: 400
+              }}
+            />
+          </motion.button>
+        )}
+      </div>
+
+      {/* Save All Button */}
+      <div className="px-4 pb-2">
+        <motion.button
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => setShowEmailModal(true)}
+          className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl py-3 mt-3 px-4 font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+        >
+          <Bookmark className="w-5 h-5" />
+          Save All {allRecommendations.length} Matches
+        </motion.button>
       </div>
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
-        <div className="p-4 space-y-4">
+        <div className="p-4 pt-2 space-y-4">
           {allRecommendations.sort((a, b) => b.score - a.score).map((rec) => (
             <motion.div
               key={rec.drink.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
-              className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm"
+              whileHover={{ 
+                scale: 1.02,
+                boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+                transition: { type: "spring", stiffness: 300 }
+              }}
+              className="bg-white rounded-xl p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer"
             >
               {/* Drink Image */}
               <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 relative overflow-hidden">
@@ -165,9 +270,14 @@ export default function WizardFullResults({
                   <h4 className="font-semibold text-gray-800 truncate">
                     {rec.drink.name}
                   </h4>
-                  <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full flex-shrink-0">
-                    {rec.score}%
-                  </span>
+                  <motion.div 
+                    className="flex items-center gap-1 bg-gradient-to-r from-purple-500 to-purple-600 text-white px-3 py-1 rounded-full flex-shrink-0 shadow-sm"
+                    whileHover={{ scale: 1.05 }}
+                    transition={{ type: "spring", stiffness: 400 }}
+                  >
+                    <span className="text-xs font-bold">{Math.min(100, rec.score)}%</span>
+                    <span className="text-xs">🎯</span>
+                  </motion.div>
                 </div>
                 <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                   {rec.drink.description}
@@ -181,16 +291,40 @@ export default function WizardFullResults({
                   <DrinkStatsDisplay drinkId={rec.drink.id} />
                 </div>
                 
-                {/* Match Reasons */}
+                {/* Match Reasons with Expandable Details */}
                 {rec.reasons && rec.reasons.length > 0 && (
-                  <div className="mt-2 text-xs text-purple-700 bg-purple-50 rounded px-2 py-1">
-                    {rec.reasons.join(' • ')}
-                  </div>
+                  <motion.div 
+                    className="mt-2"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                  >
+                    <div className="text-xs text-purple-700 bg-purple-50 rounded-lg px-3 py-2 border border-purple-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-medium text-purple-800">Why this matches:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {rec.reasons.map((reason, idx) => (
+                          <span key={idx} className="inline-flex items-center gap-1 bg-white text-purple-700 px-2 py-0.5 rounded-full text-xs border border-purple-300">
+                            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
+                            {reason}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
               </div>
               
-              {/* Like Button */}
-              <div className="flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="flex-shrink-0 flex flex-col gap-2">
+                <SaveDrinkButton 
+                  drinkId={rec.drink.id}
+                  drinkName={rec.drink.name}
+                  drink={rec.drink}
+                  size="sm"
+                  showShareOption={true}
+                />
                 <LikeButton 
                   drinkId={rec.drink.id} 
                   size="sm"
@@ -332,6 +466,28 @@ export default function WizardFullResults({
           />
         </div>
       </div>
+      
+      {/* Email Capture Modal */}
+      <EmailCaptureModal
+        isOpen={showEmailModal}
+        onClose={() => setShowEmailModal(false)}
+        matchCount={allRecommendations.length}
+        topMatch={allRecommendations[0] ? {
+          name: allRecommendations[0].drink.name,
+          category: allRecommendations[0].drink.category,
+          image_url: allRecommendations[0].drink.image_url
+        } : undefined}
+        onSubmit={(email) => {
+          console.log('Email captured:', email);
+          // Email is already saved by the modal
+        }}
+      />
+      
+      {/* My Drinks Panel */}
+      <MyDrinksPanel
+        isOpen={showMyDrinksPanel}
+        onClose={() => setShowMyDrinksPanel(false)}
+      />
     </motion.div>
   );
 }

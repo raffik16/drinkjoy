@@ -182,7 +182,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className
                       {/* Match Score as plain text */}
                       {drink.score && (
                         <p className="text-xs text-purple-600 dark:text-purple-400 mb-1 font-medium">
-                          {Math.round(drink.score)}% Match
+                          {Math.round(Math.min(100, drink.score))}% Match
                         </p>
                       )}
                       <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">

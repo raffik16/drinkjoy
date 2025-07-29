@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { FiSend, FiX } from 'react-icons/fi';
+import { FiSend, FiX, FiRefreshCw } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi2';
 import { MessageBubble, Message } from './MessageBubble';
 import { TypingIndicator } from './TypingIndicator';
@@ -21,16 +21,62 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
+  const [, setRetryCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const MAX_RETRIES = 3;
+  const RETRY_DELAY = 1000;
 
-  // Generate session ID on mount
+  // Generate session ID and load conversation from localStorage
   useEffect(() => {
-    setSessionId(`ai-chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const storedSessionId = localStorage.getItem('drinkjoy-chat-session');
+    const storedMessages = localStorage.getItem('drinkjoy-chat-messages');
+    
+    if (storedSessionId && storedMessages) {
+      try {
+        const parsedMessages = JSON.parse(storedMessages);
+        // Convert timestamp strings back to Date objects
+        const messagesWithDates = parsedMessages.map((msg: Message & { timestamp: string }) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        setMessages(messagesWithDates);
+        setSessionId(storedSessionId);
+      } catch (e) {
+        console.error('Failed to restore chat history:', e);
+        const newSessionId = `ai-chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        setSessionId(newSessionId);
+        localStorage.setItem('drinkjoy-chat-session', newSessionId);
+      }
+    } else {
+      const newSessionId = `ai-chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setSessionId(newSessionId);
+      localStorage.setItem('drinkjoy-chat-session', newSessionId);
+    }
   }, []);
+
+  // Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('drinkjoy-chat-messages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleStartOver = () => {
+    setMessages([]);
+    setInputValue('');
+    setIsTyping(false);
+    setError(null);
+    setRetryCount(0);
+    localStorage.removeItem('drinkjoy-chat-messages');
+    const newSessionId = `ai-chat-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    setSessionId(newSessionId);
+    localStorage.setItem('drinkjoy-chat-session', newSessionId);
   };
 
   useEffect(() => {
@@ -43,7 +89,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
     }
   }, [isOpen]);
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, retryAttempt = 0) => {
     if (!content.trim() || !sessionId) return;
 
     const userMessage: Message = {
@@ -53,9 +99,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+    if (retryAttempt === 0) {
+      setMessages(prev => [...prev, userMessage]);
+      setInputValue('');
+    }
+    
     setIsTyping(true);
+    setError(null);
+    setRetryCount(retryAttempt);
 
     try {
       const response = await fetch('/api/ai/chat', {
@@ -98,15 +149,28 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
 
     } catch (error) {
       console.error('Error sending message:', error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: 'Sorry, I encountered an error. Please try again.',
-        role: 'system',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      
+      // Implement retry logic
+      if (retryAttempt < MAX_RETRIES) {
+        setError(`Connection failed. Retrying... (${retryAttempt + 1}/${MAX_RETRIES})`);
+        setTimeout(() => {
+          handleSendMessage(content, retryAttempt + 1);
+        }, RETRY_DELAY * Math.pow(2, retryAttempt)); // Exponential backoff
+      } else {
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          content: 'I\'m having trouble connecting right now. Please check your internet connection and try again.',
+          role: 'system',
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorMessage]);
+        setError('Failed to connect after multiple attempts.');
+      }
     } finally {
-      setIsTyping(false);
+      if (retryAttempt >= MAX_RETRIES || !error) {
+        setIsTyping(false);
+        setRetryCount(0);
+      }
     }
   };
 
@@ -167,16 +231,35 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                  aria-label="Close chat"
-                >
-                  <FiX className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {messages.length > 0 && (
+                    <button
+                      onClick={handleStartOver}
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      aria-label="Start over"
+                      title="Start over"
+                    >
+                      <FiRefreshCw className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    </button>
+                  )}
+                  <button
+                    onClick={onClose}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                    aria-label="Close chat"
+                  >
+                    <FiX className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                  </button>
+                </div>
               </div>
               
             </div>
+
+            {/* Error Banner */}
+            {error && (
+              <div className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+                <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+              </div>
+            )}
 
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -192,6 +275,14 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
                     I&apos;m here to help you discover the perfect drink based on your preferences.
                   </p>
                   <QuickSuggestions onSelect={handleQuickSuggestion} />
+                  
+                  {/* Clear Chat Button */}
+                  <button
+                    onClick={handleStartOver}
+                    className="mt-4 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 underline"
+                  >
+                    Clear chat history
+                  </button>
                 </div>
               ) : (
                 <>
