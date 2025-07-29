@@ -95,21 +95,21 @@ function generateShareEmailHTML(drink: Drink, senderMessage?: string, senderName
             
             <!-- Drink Card -->
             <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-              <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+              <div style="margin-bottom: 20px;">
                 ${drink.image_url ? `
-                  <img src="${drink.image_url}?w=200" alt="${drink.name}" style="width: 80px; height: 80px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0;">
+                  <img src="${drink.image_url}?w=400" alt="${drink.name}" style="width: 100%; max-width: 400px; height: 200px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; margin-bottom: 16px;">
                 ` : `
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 80px; height: 80px; border-radius: 12px; display: flex; align-items: center; justify-center; font-size: 32px; border: 2px solid #e2e8f0;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 100%; height: 200px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 64px; border: 2px solid #e2e8f0; margin-bottom: 16px;">
                     ${drink.category === 'cocktail' ? '🍹' : drink.category === 'beer' ? '🍺' : drink.category === 'wine' ? '🍷' : drink.category === 'spirit' ? '🥃' : '🥤'}
                   </div>
                 `}
-                <div style="flex: 1;">
-                  <h2 style="margin: 0 0 8px 0; color: #1e293b; font-size: 24px; font-weight: 700;">${drink.name}</h2>
-                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                    <span style="background: #10b981; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
+                <div style="width: 100%;">
+                  <h2 style="margin: 0 0 12px 0; color: #1e293b; font-size: 24px; font-weight: 700;">${drink.name}</h2>
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                    <span style="display: inline-block; background: #10b981; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
                       ${drink.category}
                     </span>
-                    <span style="background: #3b82f6; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;">
+                    <span style="display: inline-block; background: #3b82f6; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600;">
                       ${drink.abv}% ABV
                     </span>
                   </div>
@@ -121,12 +121,12 @@ function generateShareEmailHTML(drink: Drink, senderMessage?: string, senderName
               <!-- Drink Details -->
               <div style="background: white; border-radius: 8px; padding: 16px; margin-top: 16px;">
                 <h3 style="margin: 0 0 12px 0; color: #374151; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Drink Details</h3>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 14px;">
-                  <div style="display: flex; justify-content: space-between;">
+                <div style="display: block; font-size: 14px;">
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f1f5f9;">
                     <span style="color: #94a3b8; font-weight: 500;">Strength:</span>
                     <span style="color: #475569; text-transform: capitalize; font-weight: 600;">${drink.strength}</span>
                   </div>
-                  <div style="display: flex; justify-content: space-between;">
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0;">
                     <span style="color: #94a3b8; font-weight: 500;">Glass:</span>
                     <span style="color: #475569;">${drink.glass_type || 'Standard'}</span>
                   </div>
