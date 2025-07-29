@@ -328,7 +328,7 @@ export function Hero({ onAIChatToggle }: HeroProps) {
                         
                         {/* Iframe */}
                         <iframe
-                          src="/app"
+                          src="/app?saving=true"
                           className="w-full h-full border-0"
                           title="Drinkjoy App Preview"
                           onLoad={() => setIsLoading(false)}

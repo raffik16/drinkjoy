@@ -6,6 +6,7 @@ import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Drink } from '@/app/types/drinks';
 import { EmailShareModal } from './EmailShareModal';
+import { useSavingFeature } from '@/hooks/useSavingFeature';
 
 interface SaveDrinkButtonProps {
   drinkId: string;
@@ -27,6 +28,12 @@ export default function SaveDrinkButton({
   const [isSaved, setIsSaved] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const isSavingEnabled = useSavingFeature();
+  
+  // Return null if saving feature is not enabled
+  if (!isSavingEnabled) {
+    return null;
+  }
 
   // Check if drink is already saved
   useEffect(() => {

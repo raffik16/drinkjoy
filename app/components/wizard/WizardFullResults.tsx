@@ -15,6 +15,7 @@ import { EmailCaptureModal } from '@/app/components/email-capture/EmailCaptureMo
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { getAdditionalDrinksFromAllCategories } from '@/lib/drinkMatcher';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
+import { useSavingFeature } from '@/hooks/useSavingFeature';
 
 interface WizardFullResultsProps {
   recommendations: DrinkRecommendation[];
@@ -44,6 +45,7 @@ export default function WizardFullResults({
   const [hasSavedDrinks, setHasSavedDrinks] = useState(false);
   const [triggerAnimation, setTriggerAnimation] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const isSavingEnabled = useSavingFeature();
 
   const loadDrinksFromAllCategories = useCallback(async (isAutoLoad = false) => {
     setIsLoadingMore(true);
@@ -85,9 +87,11 @@ export default function WizardFullResults({
     setHasMoreDrinks(true);
     setIsCheckingMore(false);
     
-    // Check if user has saved drinks before
-    const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
-    setHasSavedDrinks(savedDrinks.length > 0);
+    // Check if user has saved drinks before (only if saving is enabled)
+    if (isSavingEnabled) {
+      const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
+      setHasSavedDrinks(savedDrinks.length > 0);
+    }
     
     // Show email modal after a short delay if not already shown
     const hasSeenModal = localStorage.getItem('drinkjoy-email-modal-shown');
@@ -104,10 +108,12 @@ export default function WizardFullResults({
       
       return () => clearTimeout(timer);
     }
-  }, [recommendations, preferences, hasShownEmailModal]);
+  }, [recommendations, preferences, hasShownEmailModal, isSavingEnabled]);
 
-  // Listen for drink saved events to trigger animation
+  // Listen for drink saved events to trigger animation (only if saving is enabled)
   useEffect(() => {
+    if (!isSavingEnabled) return;
+
     const handleDrinkSaved = () => {
       setHasSavedDrinks(true); // Update saved drinks state
       setTriggerAnimation(true);
@@ -116,7 +122,7 @@ export default function WizardFullResults({
 
     window.addEventListener('drinkSaved', handleDrinkSaved);
     return () => window.removeEventListener('drinkSaved', handleDrinkSaved);
-  }, []);
+  }, [isSavingEnabled]);
 
   // Intersection Observer for auto-loading more drinks
   useEffect(() => {
@@ -169,7 +175,7 @@ export default function WizardFullResults({
             Found {allRecommendations.length} drinks just for you!
           </div>
         </div>
-        {hasSavedDrinks && (
+        {isSavingEnabled && hasSavedDrinks && (
           <motion.button
             onClick={() => setShowMyDrinksPanel(true)}
             className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors relative"
@@ -218,19 +224,21 @@ export default function WizardFullResults({
         )}
       </div>
 
-      {/* Save All Button */}
-      <div className="px-4 pb-2">
-        <motion.button
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          onClick={() => setShowEmailModal(true)}
-          className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl py-3 mt-3 px-4 font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
-        >
-          <Bookmark className="w-5 h-5" />
-          Save All {allRecommendations.length} Matches
-        </motion.button>
-      </div>
+      {/* Save All Button (only shown if saving is enabled) */}
+      {isSavingEnabled && (
+        <div className="px-4 pb-2">
+          <motion.button
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            onClick={() => setShowEmailModal(true)}
+            className="w-full bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-xl py-3 mt-3 px-4 font-semibold shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+          >
+            <Bookmark className="w-5 h-5" />
+            Save All {allRecommendations.length} Matches
+          </motion.button>
+        </div>
+      )}
 
       {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto">
@@ -483,11 +491,13 @@ export default function WizardFullResults({
         }}
       />
       
-      {/* My Drinks Panel */}
-      <MyDrinksPanel
-        isOpen={showMyDrinksPanel}
-        onClose={() => setShowMyDrinksPanel(false)}
-      />
+      {/* My Drinks Panel (only rendered if saving is enabled) */}
+      {isSavingEnabled && (
+        <MyDrinksPanel
+          isOpen={showMyDrinksPanel}
+          onClose={() => setShowMyDrinksPanel(false)}
+        />
+      )}
     </motion.div>
   );
 }

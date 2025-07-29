@@ -13,6 +13,7 @@ import OverwhelmedAnimation from '../animations/OverwhelmedAnimation';
 import ColorSplashAnimation from '../animations/ColorSplashAnimation';
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { ChevronLeft, Bookmark } from 'lucide-react';
+import { useSavingFeature } from '@/hooks/useSavingFeature';
 
 interface DrinkWizardProps {
   onComplete: (preferences: WizardPreferences) => void;
@@ -41,6 +42,7 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
   const [showMyDrinksPanel, setShowMyDrinksPanel] = useState(false);
   const [hasSavedDrinks, setHasSavedDrinks] = useState(false);
   const [triggerAnimation, setTriggerAnimation] = useState(false);
+  const isSavingEnabled = useSavingFeature();
 
   const handleAnswer = (value: string) => {
     const question = wizardQuestions[currentQuestion];
@@ -133,14 +135,17 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
     }
   }, [hasShownOverwhelmed]);
 
-  // Check for saved drinks
+  // Check for saved drinks (only if saving is enabled)
   useEffect(() => {
+    if (!isSavingEnabled) return;
     const savedIds = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
     setHasSavedDrinks(savedIds.length > 0);
-  }, []);
+  }, [isSavingEnabled]);
 
-  // Listen for drink saved events to trigger animation
+  // Listen for drink saved events to trigger animation (only if saving is enabled)
   useEffect(() => {
+    if (!isSavingEnabled) return;
+    
     const handleDrinkSaved = () => {
       setHasSavedDrinks(true); // Update saved drinks state
       setTriggerAnimation(true);
@@ -149,7 +154,7 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
 
     window.addEventListener('drinkSaved', handleDrinkSaved);
     return () => window.removeEventListener('drinkSaved', handleDrinkSaved);
-  }, []);
+  }, [isSavingEnabled]);
 
   if (showOverwhelmed || showColorSplash) {
     return (
@@ -238,8 +243,8 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
         </div>
       </div>
 
-      {/* Saved Drinks Button */}
-      {hasSavedDrinks && (
+      {/* Saved Drinks Button (only shown if saving is enabled) */}
+      {isSavingEnabled && hasSavedDrinks && (
         <motion.button
           onClick={() => setShowMyDrinksPanel(true)}
           className="fixed top-6 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-200 group shadow-lg z-30"
@@ -287,11 +292,13 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
         </motion.button>
       )}
 
-      {/* My Drinks Panel */}
-      <MyDrinksPanel
-        isOpen={showMyDrinksPanel}
-        onClose={() => setShowMyDrinksPanel(false)}
-      />
+      {/* My Drinks Panel (only rendered if saving is enabled) */}
+      {isSavingEnabled && (
+        <MyDrinksPanel
+          isOpen={showMyDrinksPanel}
+          onClose={() => setShowMyDrinksPanel(false)}
+        />
+      )}
     </>
   );
 }

@@ -17,6 +17,7 @@ import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimati
 import WizardFullResults from './WizardFullResults';
 import AllergiesModal from './AllergiesModal';
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
+import { useSavingFeature } from '@/hooks/useSavingFeature';
 
 // Witty title generator based on match count
 // function getWittyTitle(count: number): string {
@@ -64,6 +65,7 @@ export default function WizardResults({
   const [showMyDrinksPanel, setShowMyDrinksPanel] = useState(false);
   const [hasSavedDrinks, setHasSavedDrinks] = useState(false);
   const [triggerAnimation, setTriggerAnimation] = useState(false);
+  const isSavingEnabled = useSavingFeature();
 
   const updateRecommendations = useCallback(async () => {
     setIsLoadingRecommendations(true);
@@ -164,14 +166,17 @@ export default function WizardResults({
     window.scrollTo(0, 0);
   }, []);
 
-  // Check for saved drinks
+  // Check for saved drinks (only if saving is enabled)
   useEffect(() => {
+    if (!isSavingEnabled) return;
     const savedIds = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
     setHasSavedDrinks(savedIds.length > 0);
-  }, []);
+  }, [isSavingEnabled]);
 
-  // Listen for drink saved events to trigger animation
+  // Listen for drink saved events to trigger animation (only if saving is enabled)
   useEffect(() => {
+    if (!isSavingEnabled) return;
+    
     const handleDrinkSaved = () => {
       setHasSavedDrinks(true); // Update saved drinks state
       setTriggerAnimation(true);
@@ -180,7 +185,7 @@ export default function WizardResults({
 
     window.addEventListener('drinkSaved', handleDrinkSaved);
     return () => window.removeEventListener('drinkSaved', handleDrinkSaved);
-  }, []);
+  }, [isSavingEnabled]);
 
   const goToNext = async () => {
     // Check if we&apos;re at the last actual drink (not counting the special card)
@@ -498,20 +503,24 @@ export default function WizardResults({
                   )}
                   
                   {/* Action Buttons */}
-                  <div className="absolute bottom-3 left-3 right-3 flex justify-between">
-                    <SaveDrinkButton 
-                      drinkId={currentDrink?.id || ''} 
-                      drinkName={currentDrink?.name || ''}
-                      drink={currentDrink || undefined}
-                      size="md"
-                      className="shadow-lg"
-                      showShareOption={true}
-                    />
-                    <LikeButton 
-                      drinkId={currentDrink?.id || ''} 
-                      size="md"
-                      className="shadow-lg"
-                    />
+                  <div className="absolute bottom-3 left-3 right-3 flex">
+                    <div className="flex-1">
+                      <SaveDrinkButton 
+                        drinkId={currentDrink?.id || ''} 
+                        drinkName={currentDrink?.name || ''}
+                        drink={currentDrink || undefined}
+                        size="md"
+                        className="shadow-lg"
+                        showShareOption={true}
+                      />
+                    </div>
+                    <div className="">
+                      <LikeButton 
+                        drinkId={currentDrink?.id || ''} 
+                        size="md"
+                        className="shadow-lg"
+                      />
+                    </div>
                   </div>
 
                   {/* Order Button */}
@@ -559,8 +568,8 @@ export default function WizardResults({
         </AnimatePresence>
       </div>
 
-      {/* Fixed Saved Drinks Button */}
-      {hasSavedDrinks && (
+      {/* Fixed Saved Drinks Button (only shown if saving is enabled) */}
+      {isSavingEnabled && hasSavedDrinks && (
         <motion.button
           onClick={() => setShowMyDrinksPanel(true)}
           className="fixed top-6 right-6 w-12 h-12 bg-white rounded-full flex items-center justify-center hover:bg-gray-50 transition-all duration-200 group shadow-lg z-30"
@@ -745,11 +754,13 @@ export default function WizardResults({
         onUpdate={handleAllergiesUpdate}
       />
       
-      {/* My Drinks Panel */}
-      <MyDrinksPanel
-        isOpen={showMyDrinksPanel}
-        onClose={() => setShowMyDrinksPanel(false)}
-      />
+      {/* My Drinks Panel (only rendered if saving is enabled) */}
+      {isSavingEnabled && (
+        <MyDrinksPanel
+          isOpen={showMyDrinksPanel}
+          onClose={() => setShowMyDrinksPanel(false)}
+        />
+      )}
     </motion.div>
   );
 }

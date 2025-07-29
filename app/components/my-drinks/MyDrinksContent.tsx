@@ -7,6 +7,7 @@ import Image from 'next/image';
 import drinksData from '@/data/drinks';
 import { EmailShareModal } from '@/app/components/ui/EmailShareModal';
 import { DrinkCategory, Drink } from '@/app/types/drinks';
+import { useSavingFeature } from '@/hooks/useSavingFeature';
 
 const drinks = (drinksData?.drinks || drinksData || []);
 
@@ -46,6 +47,7 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
   const [loading, setLoading] = useState(true);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [drinkToShare, setDrinkToShare] = useState<SavedDrink | null>(null);
+  const isSavingEnabled = useSavingFeature();
 
   useEffect(() => {
     // Load saved drinks from localStorage
