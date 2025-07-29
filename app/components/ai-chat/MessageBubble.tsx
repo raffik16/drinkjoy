@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { FiUser } from 'react-icons/fi';
 import { HiSparkles } from 'react-icons/hi2';
-import { Wine, Beer, Coffee, Zap } from 'lucide-react';
+import { DrinkCard } from '@/app/components/drinks/DrinkCard';
+// Modal imports disabled since modals are disabled in AI chat
+// import { DrinkModal } from '@/app/components/drinks/DrinkModal';
+// import { RecipeModal } from '@/app/components/drinks/RecipeModal';
+import { Drink, DrinkRecommendation, DrinkCategory, FlavorProfile, DrinkStrength } from '@/app/types/drinks';
 
 
 export interface Message {
@@ -34,21 +37,26 @@ interface MessageBubbleProps {
   onQuickResponse?: (response: string) => void;
 }
 
-const getDrinkIcon = (category: string) => {
-  switch (category.toLowerCase()) {
-    case 'wine': return Wine;
-    case 'beer': return Beer;
-    case 'cocktail': return Zap;
-    case 'spirit': return Coffee;
-    case 'non-alcoholic': return Coffee;
-    default: return Zap;
-  }
-};
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className, onQuickResponse }) => {
   const [showAllDrinks, setShowAllDrinks] = useState<{[key: string]: boolean}>({});
+  // Modal functionality disabled in AI chat to prevent interference
+  // const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  // const [showDrinkModal, setShowDrinkModal] = useState(false);
+  // const [showRecipeModal, setShowRecipeModal] = useState(false);
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+
+  // Click handlers disabled in AI chat to prevent modal interference
+  // const handleDrinkClick = (drink: Drink) => {
+  //   setSelectedDrink(drink);
+  //   setShowDrinkModal(true);
+  // };
+
+  // const handleRecipeClick = (drink: Drink) => {
+  //   setSelectedDrink(drink);
+  //   setShowRecipeModal(true);
+  // };
 
   // System messages get special styling
   if (isSystem) {
@@ -90,7 +98,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className
       
       <div
         className={cn(
-          'max-w-[70%] rounded-2xl px-4 py-3 shadow-sm',
+          'rounded-2xl px-4 py-3 shadow-sm',
+          // Make width more flexible for drink cards
+          message.drinks && message.drinks.length > 0 ? 'max-w-[90%] w-full' : 'max-w-[70%]',
           isUser
             ? 'bg-purple-600 text-white rounded-br-sm'
             : 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 rounded-bl-sm'
@@ -115,108 +125,101 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className
         
         {/* Drinks Grid */}
         {!isUser && message.drinks && message.drinks.length > 0 && (
-          <div className="grid grid-cols-1 gap-2 mt-3">
-            {(showAllDrinks[message.id] ? message.drinks : message.drinks.slice(0, 6)).map((drink, index) => {
-              const IconComponent = getDrinkIcon(drink.category);
-              const matchQualityColors = {
-                perfect: 'border-green-300 bg-green-50 dark:bg-green-900/20 dark:border-green-700',
-                good: 'border-amber-300 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-700',
-                other: 'border-gray-300 bg-gray-50 dark:bg-gray-800 dark:border-gray-600',
-                alternative: 'border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700'
-              };
-              const matchQualityIcons = {
-                perfect: '🎯',
-                good: '✨',
-                other: '🍹',
-                alternative: '💡'
-              };
-              const borderColor = matchQualityColors[drink.matchQuality || 'other'];
-              const matchIcon = matchQualityIcons[drink.matchQuality || 'other'];
-              
-              return (
-                <motion.div 
-                  key={index} 
-                  className={`p-3 rounded-lg border ${borderColor} relative`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05, duration: 0.3 }}
-                >
-                  <div className="flex items-start gap-2">
-                    {drink.image_url ? (
-                      <div className="flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden">
-                        <Image 
-                          src={drink.image_url} 
-                          alt={drink.name}
-                          width={48}
-                          height={48}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // Fallback to icon if image fails to load
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                            const iconContainer = target.parentElement;
-                            if (iconContainer) {
-                              iconContainer.innerHTML = `<div class="w-full h-full bg-purple-100 dark:bg-purple-800 rounded-lg flex items-center justify-center">
-                                <svg class="w-6 h-6 text-purple-600 dark:text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-                                  ${IconComponent === Wine ? '<path d="M12 2C13.1 2 14 2.9 14 4V6H10V4C10 2.9 10.9 2 12 2M6 6H18V8H16V20C16 21.1 15.1 22 14 22H10C8.9 22 8 21.1 8 20V8H6V6Z"/>' : 
-                                    IconComponent === Beer ? '<path d="M5,4V6H6V19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V6H19V4H5M8,6H16V19H8V6Z"/>' :
-                                    '<path d="M12,2A2,2 0 0,1 14,4V8A4,4 0 0,1 10,12H10.5A2.5,2.5 0 0,0 13,14.5V16H11V14.5A2.5,2.5 0 0,0 8.5,12H9A4,4 0 0,1 5,8V4A2,2 0 0,1 7,2H12Z"/>'}
-                                </svg>
-                              </div>`;
-                            }
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="flex-shrink-0 w-12 h-12 bg-purple-100 dark:bg-purple-800 rounded-lg flex items-center justify-center">
-                        <IconComponent className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+          <div className="mt-4 -mx-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 px-4">
+              {(showAllDrinks[message.id] ? message.drinks : message.drinks.slice(0, 6)).map((drinkData, index) => {
+                // Transform AI response data to match Drink interface
+                const drink: Drink = {
+                  id: `ai-${index}-${Date.now()}`,
+                  name: drinkData.name,
+                  category: drinkData.category as DrinkCategory,
+                  description: drinkData.description || '',
+                  ingredients: [],
+                  abv: drinkData.abv || 0,
+                  flavor_profile: (drinkData.flavor_profile || []) as FlavorProfile[],
+                  strength: 'medium' as DrinkStrength, // Default fallback
+                  weather_match: {
+                    temp_min: 0,
+                    temp_max: 30,
+                    conditions: [],
+                    ideal_temp: 15
+                  },
+                  occasions: [],
+                  serving_suggestions: [],
+                  image_url: drinkData.image_url || '',
+                  glass_type: undefined,
+                  preparation: undefined
+                };
+
+                // Debug logging for image URLs in AI chat
+                if (process.env.NODE_ENV === 'development') {
+                  console.log(`AI Chat Image Debug - ${drinkData.name}:`, {
+                    original_image_url: drinkData.image_url,
+                    final_image_url: drink.image_url,
+                    has_image: !!drink.image_url
+                  });
+                }
+
+                // Create recommendation data if available
+                const recommendation: DrinkRecommendation | undefined = drinkData.score ? {
+                  drink,
+                  score: drinkData.score,
+                  reasons: drinkData.matchReasons || []
+                } : undefined;
+                
+                return (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.3 }}
+                    className="relative"
+                  >
+                    {/* Match Quality Badge */}
+                    {drinkData.matchQuality && (
+                      <div className="absolute top-2 left-2 z-10">
+                        <div className={cn(
+                          "px-2 py-1 rounded-full text-xs font-medium shadow-md",
+                          drinkData.matchQuality === 'perfect' && "bg-green-500 text-white",
+                          drinkData.matchQuality === 'good' && "bg-amber-500 text-white",
+                          drinkData.matchQuality === 'other' && "bg-gray-500 text-white",
+                          drinkData.matchQuality === 'alternative' && "bg-blue-500 text-white"
+                        )}>
+                          {drinkData.matchQuality === 'perfect' && '🎯 Perfect'}
+                          {drinkData.matchQuality === 'good' && '✨ Good'}
+                          {drinkData.matchQuality === 'other' && '🍹 Match'}
+                          {drinkData.matchQuality === 'alternative' && '💡 Alternative'}
+                        </div>
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1 mb-1">
-                        <span className="text-xs">{matchIcon}</span>
-                        <h4 className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                          {drink.name}
-                        </h4>
-                      </div>
-                      {/* Match Score as plain text */}
-                      {drink.score && (
-                        <p className="text-xs text-purple-600 dark:text-purple-400 mb-1 font-medium">
-                          {Math.round(Math.min(100, drink.score))}% Match
-                        </p>
-                      )}
-                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1">
-                        {drink.category}
-                      </p>
-                      {drink.flavor_profile && drink.flavor_profile.length > 0 && (
-                        <p className="text-xs text-purple-700 dark:text-purple-300 mb-1">
-                          {drink.flavor_profile.slice(0, 2).join(', ')}
-                        </p>
-                      )}
-                      {drink.abv && (
-                        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
-                          {drink.abv}% ABV
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+                    <DrinkCard
+                      drink={drink}
+                      recommendation={recommendation}
+                      // onClick and onRecipeClick disabled in AI chat for display-only mode
+                      // onClick={() => handleDrinkClick(drink)}
+                      // onRecipeClick={() => handleRecipeClick(drink)}
+                      className="h-full"
+                    />
+                  </motion.div>
+                );
+              })}
+            </div>
             
             {/* Show More Button */}
             {message.drinks && message.drinks.length > 6 && !showAllDrinks[message.id] && (
-              <motion.button
-                onClick={() => setShowAllDrinks(prev => ({ ...prev, [message.id]: true }))}
-                className="mt-2 w-full px-3 py-1.5 text-xs bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors border border-purple-200 hover:border-purple-300"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.3 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                Show {message.drinks.length - 6} More Options
-              </motion.button>
+              <div className="px-4 mt-4">
+                <motion.button
+                  onClick={() => setShowAllDrinks(prev => ({ ...prev, [message.id]: true }))}
+                  className="w-full px-4 py-2 text-sm bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg transition-colors border border-purple-200 hover:border-purple-300 font-medium"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3, duration: 0.3 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  Show {message.drinks.length - 6} More Options
+                </motion.button>
+              </div>
             )}
           </div>
         )}
@@ -236,6 +239,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, className
           <FiUser className="w-4 h-4 text-gray-600 dark:text-gray-300" />
         </div>
       )}
+      
+      {/* Modals disabled in AI chat to prevent interference */}
     </motion.div>
   );
 };

@@ -24,6 +24,7 @@ export const DrinkCard: React.FC<DrinkCardProps> = ({
   className 
 }) => {
   const [imageLoading, setImageLoading] = useState(true);
+  const [imageError, setImageError] = useState(false);
   
   const categoryColors = {
     beer: 'from-amber-500 to-amber-600',
@@ -42,32 +43,42 @@ export const DrinkCard: React.FC<DrinkCardProps> = ({
 
   return (
     <motion.div
-      whileHover={{ y: -4 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={onClick ? { y: -4 } : {}}
+      whileTap={onClick ? { scale: 0.98 } : {}}
       className={className}
     >
       <Card 
         variant="default" 
         hover={false}
         onClick={onClick}
-        className="cursor-pointer overflow-hidden h-full"
+        className={cn("overflow-hidden h-full", onClick && "cursor-pointer")}
       >
         <div className="relative h-48 w-full">
-          {imageLoading && (
+          {imageLoading && !imageError && (
             <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse">
               <div className="absolute inset-0 animate-shimmer" />
             </div>
           )}
-          <Image
-            src={drink.image_url}
-            alt={drink.name}
-            fill
-            className={cn("object-cover transition-opacity duration-300", 
-              imageLoading ? "opacity-0" : "opacity-100"
-            )}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            onLoad={() => setImageLoading(false)}
-          />
+          {drink.image_url && drink.image_url.trim() !== '' && !imageError ? (
+            <Image
+              src={drink.image_url}
+              alt={drink.name}
+              fill
+              className={cn("object-cover transition-opacity duration-300", 
+                imageLoading ? "opacity-0" : "opacity-100"
+              )}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full bg-gradient-to-br from-gray-100 to-gray-200">
+              <span className="text-6xl">🍹</span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
           
           {/* Happy Hour Badge */}

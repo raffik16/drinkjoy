@@ -141,7 +141,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
         content: data.message,
         role: 'assistant',
         timestamp: new Date(),
-        quickButtons: data.quickButtons,
+        quickButtons: data.buttons ? data.buttons.map((btn: {text: string; value: string; type: string}) => btn.text) : undefined,
         drinks: data.drinks
       };
       
@@ -204,7 +204,7 @@ export const AIChatInterface: React.FC<AIChatInterfaceProps> = ({ isOpen, onClos
             transition={{ type: 'spring', stiffness: 400, damping: 30 }}
             className={cn(
               'fixed bottom-24 right-6 z-50',
-              'w-[calc(100vw-3rem)] md:w-96',
+              'w-[calc(100vw-3rem)] md:w-[28rem] lg:w-[32rem]', // Wider to accommodate drink cards
               'h-[calc(100vh-12rem)]',
               'bg-white dark:bg-gray-900',
               'rounded-2xl shadow-2xl',
