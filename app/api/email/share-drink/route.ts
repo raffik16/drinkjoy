@@ -95,17 +95,17 @@ function generateShareEmailHTML(drink: Drink, senderMessage?: string, senderName
             
             <!-- Drink Card -->
             <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 16px 0; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-              <div style="margin-bottom: 20px;">
+              <div style="margin-bottom: 20px; text-align: center;">
                 ${drink.image_url ? `
-                  <img src="${drink.image_url}?w=400" alt="${drink.name}" style="width: 100%; max-width: 400px; height: 200px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; margin-bottom: 16px;">
+                  <img src="${drink.image_url}?w=400" alt="${drink.name}" style="width: 100%; max-width: 400px; height: 200px; border-radius: 12px; object-fit: cover; border: 2px solid #e2e8f0; margin: 0 auto 16px auto; display: block;">
                 ` : `
-                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 100%; height: 200px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 64px; border: 2px solid #e2e8f0; margin-bottom: 16px;">
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); width: 100%; max-width: 400px; height: 200px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 64px; border: 2px solid #e2e8f0; margin: 0 auto 16px auto;">
                     ${drink.category === 'cocktail' ? '🍹' : drink.category === 'beer' ? '🍺' : drink.category === 'wine' ? '🍷' : drink.category === 'spirit' ? '🥃' : '🥤'}
                   </div>
                 `}
-                <div style="width: 100%;">
+                <div style="width: 100%; text-align: left;">
                   <h2 style="margin: 0 0 12px 0; color: #1e293b; font-size: 24px; font-weight: 700;">${drink.name}</h2>
-                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+                  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; justify-content: flex-start;">
                     <span style="display: inline-block; background: #10b981; color: white; padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; text-transform: uppercase;">
                       ${drink.category}
                     </span>
