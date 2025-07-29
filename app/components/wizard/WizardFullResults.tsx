@@ -321,8 +321,9 @@ export default function WizardFullResults({
                 <SaveDrinkButton 
                   drinkId={rec.drink.id}
                   drinkName={rec.drink.name}
+                  drink={rec.drink}
                   size="sm"
-                  showShareOption={false}
+                  showShareOption={true}
                 />
                 <LikeButton 
                   drinkId={rec.drink.id} 

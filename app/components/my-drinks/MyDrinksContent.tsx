@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Share2, Trash2, Search, Filter } from 'lucide-react';
+import { Mail, Trash2, Search, Filter } from 'lucide-react';
 import Image from 'next/image';
 import drinksData from '@/data/drinks';
+import { EmailShareModal } from '@/app/components/ui/EmailShareModal';
 
 const drinks = (drinksData?.drinks || drinksData || []);
 
@@ -16,6 +17,11 @@ interface SavedDrink {
   image_url?: string;
   abv?: number;
   flavor_profile?: string[];
+  ingredients?: string[];
+  strength?: string;
+  weather_match?: any;
+  occasions?: string[];
+  serving_suggestions?: string[];
   dateSaved: string;
 }
 
@@ -29,6 +35,8 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [drinkToShare, setDrinkToShare] = useState<SavedDrink | null>(null);
 
   useEffect(() => {
     // Load saved drinks from localStorage
@@ -59,23 +67,9 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
     setSavedDrinks(prev => prev.filter(drink => drink.id !== drinkId));
   };
 
-  const shareDrink = async (drink: SavedDrink) => {
-    const shareUrl = `${window.location.origin}/drink/${drink.id}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: drink.name,
-          text: `Check out this drink: ${drink.name}`,
-          url: shareUrl
-        });
-      } catch {
-        console.log('Share cancelled');
-      }
-    } else {
-      navigator.clipboard.writeText(shareUrl);
-      // Could add a toast notification here
-    }
+  const shareDrink = (drink: SavedDrink) => {
+    setDrinkToShare(drink);
+    setShareModalOpen(true);
   };
 
   const filteredDrinks = savedDrinks.filter(drink => {
@@ -110,7 +104,7 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
             placeholder="Search your drinks..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 bg-white rounded-lg border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="w-full pl-10 pr-4 py-2 bg-gray-800 rounded-lg border border-gray-600 placeholder-gray-400 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           />
         </div>
         <div className="relative">
@@ -118,7 +112,7 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
           <select
             value={filterCategory}
             onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full pl-10 pr-8 py-2 bg-white rounded-lg border border-gray-300 text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+            className="w-full pl-10 pr-8 py-2 bg-gray-800 rounded-lg border border-gray-600 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 appearance-none"
           >
             {categories.map(category => (
               <option key={category} value={category}>
@@ -181,7 +175,7 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
                       onClick={() => shareDrink(drink)}
                       className="p-1.5 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white transition-colors"
                     >
-                      <Share2 className="w-3 h-3 text-gray-600" />
+                      <Mail className="w-3 h-3 text-gray-600" />
                     </button>
                     <button
                       onClick={() => removeDrink(drink.id)}
@@ -227,6 +221,18 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
             ))}
           </AnimatePresence>
         </div>
+      )}
+
+      {/* Email Share Modal */}
+      {drinkToShare && (
+        <EmailShareModal
+          isOpen={shareModalOpen}
+          onClose={() => {
+            setShareModalOpen(false);
+            setDrinkToShare(null);
+          }}
+          drink={drinkToShare}
+        />
       )}
     </div>
   );

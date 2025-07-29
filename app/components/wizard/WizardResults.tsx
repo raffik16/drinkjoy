@@ -498,13 +498,14 @@ export default function WizardResults({
                   )}
                   
                   {/* Action Buttons */}
-                  <div className="absolute bottom-3 right-3 flex gap-2">
+                  <div className="absolute bottom-3 left-3 right-3 flex justify-between">
                     <SaveDrinkButton 
                       drinkId={currentDrink?.id || ''} 
                       drinkName={currentDrink?.name || ''}
+                      drink={currentDrink || undefined}
                       size="md"
                       className="shadow-lg"
-                      showShareOption={false}
+                      showShareOption={true}
                     />
                     <LikeButton 
                       drinkId={currentDrink?.id || ''} 

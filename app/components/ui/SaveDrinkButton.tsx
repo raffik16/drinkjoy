@@ -2,12 +2,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bookmark, BookmarkCheck, Share2, Check } from 'lucide-react';
+import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Drink } from '@/app/types/drinks';
+import { EmailShareModal } from './EmailShareModal';
 
 interface SaveDrinkButtonProps {
   drinkId: string;
   drinkName: string;
+  drink?: Drink; // Optional full drink object for email sharing
   size?: 'sm' | 'md' | 'lg';
   className?: string;
   showShareOption?: boolean;
@@ -16,13 +19,14 @@ interface SaveDrinkButtonProps {
 export default function SaveDrinkButton({ 
   drinkId, 
   drinkName,
+  drink,
   size = 'md',
   className,
   showShareOption = true
 }: SaveDrinkButtonProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Check if drink is already saved
   useEffect(() => {
@@ -56,24 +60,27 @@ export default function SaveDrinkButton({
     }
   };
 
-  const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/drink/${drinkId}`;
-    
-    if (navigator.share) {
-      try {
-        await navigator.share({
+  const handleShare = () => {
+    if (drink) {
+      // Open email modal if full drink object is available
+      setIsEmailModalOpen(true);
+    } else {
+      // Fallback to URL sharing if no drink object
+      const shareUrl = `${window.location.origin}/drink/${drinkId}`;
+      
+      if (navigator.share) {
+        navigator.share({
           title: drinkName,
           text: `Check out this drink: ${drinkName}`,
           url: shareUrl
+        }).catch(() => {
+          // Fallback to copy to clipboard
+          navigator.clipboard.writeText(shareUrl);
         });
-      } catch (err) {
-        console.log('Share cancelled');
+      } else {
+        // Copy to clipboard
+        navigator.clipboard.writeText(shareUrl);
       }
-    } else {
-      // Fallback to copy to clipboard
-      navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -123,27 +130,6 @@ export default function SaveDrinkButton({
         </motion.div>
       </motion.button>
 
-      {showShareOption && (
-        <motion.button
-          onClick={handleShare}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={cn(
-            "relative rounded-lg transition-all duration-200",
-            "bg-white shadow-md hover:shadow-lg",
-            "border border-gray-200",
-            "text-gray-600 hover:text-purple-600 hover:bg-purple-50",
-            sizeClasses[size]
-          )}
-          aria-label="Share drink"
-        >
-          {copied ? (
-            <Check className={cn(iconSizes[size], "text-green-600")} />
-          ) : (
-            <Share2 className={iconSizes[size]} />
-          )}
-        </motion.button>
-      )}
 
       {/* Tooltip */}
       {showTooltip && (
@@ -159,18 +145,13 @@ export default function SaveDrinkButton({
         </motion.div>
       )}
 
-      {/* Copy tooltip */}
-      {copied && (
-        <motion.div
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 5 }}
-          className="absolute -top-8 right-0 whitespace-nowrap"
-        >
-          <div className="bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded shadow-lg">
-            Link copied!
-          </div>
-        </motion.div>
+      {/* Email Share Modal */}
+      {drink && (
+        <EmailShareModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          drink={drink}
+        />
       )}
     </div>
   );
