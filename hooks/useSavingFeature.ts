@@ -7,6 +7,9 @@ import { useState, useEffect } from 'react';
  * @returns {boolean} true if saving is enabled via URL param
  */
 function isSavingEnabled(): boolean {
+  // TEMPORARY OVERRIDE: Always return true
+  return true;
+  
   if (typeof window === 'undefined') {
     return false;
   }
