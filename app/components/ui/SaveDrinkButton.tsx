@@ -36,6 +36,33 @@ export default function SaveDrinkButton({
     const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
     setIsSaved(savedDrinks.includes(drinkId));
   }, [drinkId, isSavingEnabled]);
+
+  // Listen for drink removal events to sync state
+  useEffect(() => {
+    if (!isSavingEnabled) return;
+
+    const handleDrinkRemoved = (event: CustomEvent) => {
+      const { drinkId: removedDrinkId } = event.detail;
+      if (removedDrinkId === drinkId) {
+        setIsSaved(false);
+      }
+    };
+
+    const handleDrinkSaved = (event: CustomEvent) => {
+      const { drinkId: savedDrinkId } = event.detail;
+      if (savedDrinkId === drinkId) {
+        setIsSaved(true);
+      }
+    };
+
+    window.addEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+    window.addEventListener('drinkSaved', handleDrinkSaved as EventListener);
+
+    return () => {
+      window.removeEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+      window.removeEventListener('drinkSaved', handleDrinkSaved as EventListener);
+    };
+  }, [drinkId, isSavingEnabled]);
   
   // Return null if saving feature is not enabled
   if (!isSavingEnabled) {
@@ -52,6 +79,11 @@ export default function SaveDrinkButton({
       setIsSaved(false);
       setShowTooltip(true);
       setTimeout(() => setShowTooltip(false), 2000);
+      
+      // Dispatch custom event to notify other components
+      window.dispatchEvent(new CustomEvent('drinkRemoved', { 
+        detail: { drinkId, remainingCount: filtered.length } 
+      }));
     } else {
       // Add to saved
       savedDrinks.push(drinkId);

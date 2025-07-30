@@ -20,6 +20,32 @@ export function MyDrinksPanel({ isOpen, onClose }: MyDrinksPanelProps) {
     }
   }, [isOpen]);
 
+  // Listen for drink removal events to update count and close panel if empty
+  useEffect(() => {
+    const handleDrinkRemoved = (event: CustomEvent) => {
+      const { remainingCount } = event.detail;
+      setSavedDrinksCount(remainingCount);
+      
+      // Close the panel if no drinks remain
+      if (remainingCount === 0 && isOpen) {
+        onClose();
+      }
+    };
+
+    const handleDrinkSaved = () => {
+      const savedIds = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
+      setSavedDrinksCount(savedIds.length);
+    };
+
+    window.addEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+    window.addEventListener('drinkSaved', handleDrinkSaved);
+    
+    return () => {
+      window.removeEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+      window.removeEventListener('drinkSaved', handleDrinkSaved);
+    };
+  }, [isOpen, onClose]);
+
   return (
     <AnimatePresence>
       {isOpen && (

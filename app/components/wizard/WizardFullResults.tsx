@@ -120,8 +120,17 @@ export default function WizardFullResults({
       setTimeout(() => setTriggerAnimation(false), 1000); // Reset after animation
     };
 
+    const handleDrinkRemoved = (event: CustomEvent) => {
+      const { remainingCount } = event.detail;
+      setHasSavedDrinks(remainingCount > 0);
+    };
+
     window.addEventListener('drinkSaved', handleDrinkSaved);
-    return () => window.removeEventListener('drinkSaved', handleDrinkSaved);
+    window.addEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+    return () => {
+      window.removeEventListener('drinkSaved', handleDrinkSaved);
+      window.removeEventListener('drinkRemoved', handleDrinkRemoved as EventListener);
+    };
   }, [isSavingEnabled]);
 
   // Intersection Observer for auto-loading more drinks
@@ -175,53 +184,56 @@ export default function WizardFullResults({
             Found {allRecommendations.length} drinks just for you!
           </div>
         </div>
-        {isSavingEnabled && hasSavedDrinks && (
-          <motion.button
-            onClick={() => setShowMyDrinksPanel(true)}
-            className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors relative"
-            title="View Saved Drinks"
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ 
-              scale: triggerAnimation ? [1, 1.3, 1.1, 1.2, 1] : 1, 
-              opacity: 1,
-              rotate: triggerAnimation ? [0, -8, 8, -4, 0] : 0
-            }}
-            transition={{ 
-              delay: triggerAnimation ? 0 : 0.5, 
-              type: triggerAnimation ? "tween" : "spring", 
-              stiffness: triggerAnimation ? 400 : 300,
-              duration: triggerAnimation ? 0.8 : undefined,
-              ease: triggerAnimation ? "easeInOut" : undefined
-            }}
-          >
-            <motion.div
+        <AnimatePresence>
+          {isSavingEnabled && hasSavedDrinks && (
+            <motion.button
+              onClick={() => setShowMyDrinksPanel(true)}
+              className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors relative"
+              title="View Saved Drinks"
+              initial={{ scale: 0, opacity: 0 }}
               animate={{ 
-                scale: triggerAnimation ? [1, 1.4, 1.2, 1.3, 1] : 1
+                scale: triggerAnimation ? [1, 1.3, 1.1, 1.2, 1] : 1, 
+                opacity: 1,
+                rotate: triggerAnimation ? [0, -8, 8, -4, 0] : 0
               }}
+              exit={{ scale: 0, opacity: 0 }}
               transition={{ 
-                duration: triggerAnimation ? 0.8 : 0,
-                type: triggerAnimation ? "tween" : "spring",
-                ease: triggerAnimation ? "easeInOut" : undefined,
-                stiffness: 400
+                delay: triggerAnimation ? 0 : 0.5, 
+                type: triggerAnimation ? "tween" : "spring", 
+                stiffness: triggerAnimation ? 400 : 300,
+                duration: triggerAnimation ? 0.8 : undefined,
+                ease: triggerAnimation ? "easeInOut" : undefined
               }}
             >
-              <Bookmark className="w-5 h-5" />
-            </motion.div>
-            {/* Notification dot */}
-            <motion.div 
-              className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white animate-pulse"
-              animate={{
-                scale: triggerAnimation ? [1, 1.6, 1.3, 1.5, 1] : 1
-              }}
-              transition={{
-                duration: triggerAnimation ? 0.8 : 0,
-                type: triggerAnimation ? "tween" : "spring",
-                ease: triggerAnimation ? "easeInOut" : undefined,
-                stiffness: 400
-              }}
-            />
-          </motion.button>
-        )}
+              <motion.div
+                animate={{ 
+                  scale: triggerAnimation ? [1, 1.4, 1.2, 1.3, 1] : 1
+                }}
+                transition={{ 
+                  duration: triggerAnimation ? 0.8 : 0,
+                  type: triggerAnimation ? "tween" : "spring",
+                  ease: triggerAnimation ? "easeInOut" : undefined,
+                  stiffness: 400
+                }}
+              >
+                <Bookmark className="w-5 h-5" />
+              </motion.div>
+              {/* Notification dot */}
+              <motion.div 
+                className="absolute -top-1 -right-1 w-3 h-3 bg-purple-500 rounded-full border-2 border-white animate-pulse"
+                animate={{
+                  scale: triggerAnimation ? [1, 1.6, 1.3, 1.5, 1] : 1
+                }}
+                transition={{
+                  duration: triggerAnimation ? 0.8 : 0,
+                  type: triggerAnimation ? "tween" : "spring",
+                  ease: triggerAnimation ? "easeInOut" : undefined,
+                  stiffness: 400
+                }}
+              />
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Save All Button (only shown if saving is enabled) */}

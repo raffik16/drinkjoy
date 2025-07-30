@@ -76,6 +76,11 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
     localStorage.setItem('drinkjoy-saved-drinks', JSON.stringify(filtered));
     localStorage.removeItem(`drinkjoy-saved-date-${drinkId}`);
     setSavedDrinks(prev => prev.filter(drink => drink.id !== drinkId));
+    
+    // Dispatch event to notify parent components about the removal
+    window.dispatchEvent(new CustomEvent('drinkRemoved', {
+      detail: { drinkId, remainingCount: filtered.length }
+    }));
   };
 
   const shareDrink = (drink: SavedDrink) => {
