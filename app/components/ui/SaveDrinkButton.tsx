@@ -29,17 +29,18 @@ export default function SaveDrinkButton({
   const [showTooltip, setShowTooltip] = useState(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
   const isSavingEnabled = useSavingFeature();
+
+  // Check if drink is already saved
+  useEffect(() => {
+    if (!isSavingEnabled) return;
+    const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
+    setIsSaved(savedDrinks.includes(drinkId));
+  }, [drinkId, isSavingEnabled]);
   
   // Return null if saving feature is not enabled
   if (!isSavingEnabled) {
     return null;
   }
-
-  // Check if drink is already saved
-  useEffect(() => {
-    const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
-    setIsSaved(savedDrinks.includes(drinkId));
-  }, [drinkId]);
 
   const handleSave = () => {
     const savedDrinks = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
