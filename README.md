@@ -63,7 +63,7 @@ GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL=your_service_account@project.iam.gserviceacc
 GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_private_key_here\n-----END PRIVATE KEY-----\n"
 ```
 
-> **Note**: The app now fetches drink data directly from Google Sheets. If Google Sheets credentials are not configured, it will fall back to cached data.
+> **Note**: The app now uses a smart polling system to sync drink data from Google Sheets to a database cache. This provides reliable access to up-to-date drink data even during server restarts or Google Sheets API outages.
 
 5. Run the development server:
 ```bash
@@ -105,10 +105,26 @@ The app now fetches drink data directly from Google Sheets instead of using loca
 
 ### Data Flow
 
-1. **Initial Request**: App checks in-memory cache first
-2. **Cache Miss**: Fetches from Google Sheets API
-3. **Fallback**: Uses local JSON if Sheets unavailable
-4. **Webhook Updates**: Admin changes trigger instant cache refresh
+1. **Smart Polling**: Background service polls Google Sheets every 60 seconds
+2. **Change Detection**: Only syncs when changes are detected (efficient)
+3. **Database Cache**: Data stored in Supabase for persistence across restarts
+4. **Fast Access**: API requests served from database cache
+5. **Fallback**: Direct Google Sheets fetch if cache is empty
+6. **Self-Healing**: Automatic retry logic and error recovery
+
+### Admin Endpoints
+
+- `GET /api/admin/sync-status` - Check sync status and cache statistics
+- `POST /api/admin/sync-status` - Trigger manual sync
+- `GET /api/admin/monitoring` - Comprehensive system health monitoring
+- `POST /api/admin/clear-cache` - Clear database cache
+
+### Testing
+
+Test the polling system:
+```bash
+npm run test:polling
+```
 
 ## API Setup (Optional)
 

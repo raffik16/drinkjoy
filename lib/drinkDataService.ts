@@ -1,5 +1,5 @@
 import { Drink } from '@/app/types/drinks';
-import { drinkCache, CACHE_KEYS } from './cache';
+import { clientCache, CACHE_KEYS } from './client-cache';
 
 interface DrinksResponse {
   drinks: Drink[];
@@ -16,7 +16,7 @@ class DrinkDataService {
    */
   async getAllDrinks(): Promise<DrinksResponse> {
     // Check cache first
-    const cachedDrinks = drinkCache.get<Drink[]>(CACHE_KEYS.ALL_DRINKS);
+    const cachedDrinks = clientCache.get<Drink[]>(CACHE_KEYS.ALL_DRINKS);
     if (cachedDrinks) {
       return { drinks: cachedDrinks, source: 'cache' };
     }
@@ -32,7 +32,7 @@ class DrinkDataService {
       const drinks = data.drinks || [];
       
       // Cache the data
-      drinkCache.set(CACHE_KEYS.ALL_DRINKS, drinks, 300);
+      clientCache.set(CACHE_KEYS.ALL_DRINKS, drinks, 300);
       this.cacheByCategory(drinks);
       
       return { drinks, source: 'api' };
@@ -48,7 +48,7 @@ class DrinkDataService {
   async getDrinksByCategory(category: string): Promise<Drink[]> {
     // Check category cache
     const cacheKey = CACHE_KEYS.DRINKS_BY_CATEGORY(category);
-    const cachedDrinks = drinkCache.get<Drink[]>(cacheKey);
+    const cachedDrinks = clientCache.get<Drink[]>(cacheKey);
     if (cachedDrinks) {
       return cachedDrinks;
     }
@@ -58,7 +58,7 @@ class DrinkDataService {
     const categoryDrinks = drinks.filter(drink => drink.category === category);
     
     // Cache the filtered results
-    drinkCache.set(cacheKey, categoryDrinks, 300);
+    clientCache.set(cacheKey, categoryDrinks, 300);
     
     return categoryDrinks;
   }
@@ -69,7 +69,7 @@ class DrinkDataService {
   async getDrinkById(id: string): Promise<Drink | undefined> {
     // Check specific drink cache
     const cacheKey = CACHE_KEYS.DRINK_BY_ID(id);
-    const cachedDrink = drinkCache.get<Drink>(cacheKey);
+    const cachedDrink = clientCache.get<Drink>(cacheKey);
     if (cachedDrink) {
       return cachedDrink;
     }
@@ -80,26 +80,26 @@ class DrinkDataService {
     
     if (drink) {
       // Cache the individual drink
-      drinkCache.set(cacheKey, drink, 300);
+      clientCache.set(cacheKey, drink, 300);
     }
     
     return drink;
   }
   
   /**
-   * Update cache with new data (called by webhook)
+   * Update cache with new data (client-side)
    */
   updateCache(drinks: Drink[]): void {
     // Clear all caches
-    drinkCache.clear();
+    clientCache.clear();
     
     // Set new data
-    drinkCache.set(CACHE_KEYS.ALL_DRINKS, drinks, 300);
+    clientCache.set(CACHE_KEYS.ALL_DRINKS, drinks, 300);
     this.cacheByCategory(drinks);
     
     // Cache individual drinks
     drinks.forEach(drink => {
-      drinkCache.set(CACHE_KEYS.DRINK_BY_ID(drink.id), drink, 300);
+      clientCache.set(CACHE_KEYS.DRINK_BY_ID(drink.id), drink, 300);
     });
   }
   
@@ -113,7 +113,7 @@ class DrinkDataService {
     categories.forEach(category => {
       const categoryDrinks = drinks.filter(drink => drink.category === category);
       if (categoryDrinks.length > 0) {
-        drinkCache.set(CACHE_KEYS.DRINKS_BY_CATEGORY(category), categoryDrinks, 300);
+        clientCache.set(CACHE_KEYS.DRINKS_BY_CATEGORY(category), categoryDrinks, 300);
       }
     });
   }

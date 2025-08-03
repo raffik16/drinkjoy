@@ -4,7 +4,7 @@ interface CacheEntry<T> {
   ttl: number;
 }
 
-class MemoryCache {
+class ClientCache {
   private cache: Map<string, CacheEntry<unknown>> = new Map();
   
   set<T>(key: string, data: T, ttlSeconds: number = 300): void {
@@ -53,8 +53,8 @@ class MemoryCache {
   }
 }
 
-// Export singleton instance
-export const drinkCache = new MemoryCache();
+// Export singleton instance for client-side use
+export const clientCache = new ClientCache();
 
 // Cache keys
 export const CACHE_KEYS = {
