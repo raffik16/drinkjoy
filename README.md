@@ -49,12 +49,21 @@ npm install
 cp .env.example .env.local
 ```
 
-4. Add your OpenWeatherMap API key to `.env.local` (optional):
+4. Add environment variables to `.env.local`:
 ```env
-NEXT_PUBLIC_WEATHER_API_KEY=your_api_key_here
+# Optional: Weather enhancement
+NEXT_PUBLIC_WEATHER_API_KEY=your_openweather_api_key
+
+# Required for admin system: Random secret for webhook security
+SHEETS_WEBHOOK_SECRET=your_random_secret_here
+
+# Google Sheets Integration (NEW - Required for live data)
+GOOGLE_SHEETS_SPREADSHEET_ID=your_spreadsheet_id_here
+GOOGLE_SHEETS_SERVICE_ACCOUNT_EMAIL=your_service_account@project.iam.gserviceaccount.com
+GOOGLE_SHEETS_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour_private_key_here\n-----END PRIVATE KEY-----\n"
 ```
 
-> **Note**: The app works perfectly without weather data - this is only needed for optional location-based enhancements.
+> **Note**: The app now fetches drink data directly from Google Sheets. If Google Sheets credentials are not configured, it will fall back to cached data.
 
 5. Run the development server:
 ```bash
@@ -75,6 +84,31 @@ npm run dev
 3. **Smart Matching**: Advanced algorithm scores drinks based on your answers
 4. **Swipe Discovery**: Navigate through personalized matches with gesture controls
 5. **Detailed Results**: Get recipes, ingredients, and shopping links
+
+## Data Architecture
+
+### NEW: Live Google Sheets Integration
+
+The app now fetches drink data directly from Google Sheets instead of using local JSON files:
+
+- **Primary Source**: Google Sheets API (real-time data)
+- **Caching**: In-memory cache with 5-minute TTL for performance
+- **Fallback**: Local JSON files (temporary until fully migrated)
+- **Webhook Updates**: Instant cache refresh when sheets are edited
+
+### Setting Up Google Sheets Integration
+
+1. Create a Google Cloud Project and enable the Sheets API
+2. Create a Service Account and download the credentials JSON
+3. Share your Google Sheet with the service account email
+4. Add the credentials to your environment variables
+
+### Data Flow
+
+1. **Initial Request**: App checks in-memory cache first
+2. **Cache Miss**: Fetches from Google Sheets API
+3. **Fallback**: Uses local JSON if Sheets unavailable
+4. **Webhook Updates**: Admin changes trigger instant cache refresh
 
 ## API Setup (Optional)
 
@@ -109,7 +143,13 @@ app/
     ├── weather.ts          # Weather API integration
     └── utils.ts            # Helper functions
 data/
-├── drinks.json             # Curated drink database
+├── drinks/                 # Curated drink database
+│   ├── beer.json           # Beer and cider drinks
+│   ├── wine.json           # Wine varieties
+│   ├── cocktails.json      # Mixed drinks and cocktails
+│   ├── spirits.json        # Spirits and hard liquor
+│   ├── non-alcoholic.json  # Non-alcoholic beverages
+│   └── index.js            # Combined drink exports
 └── wizardQuestions.ts      # Interactive quiz questions
 ```
 
@@ -154,9 +194,13 @@ The app uses a sophisticated scoring system to match drinks to your preferences:
 
 ## Customization
 
-### Adding New Drinks
+### Admin Management
 
-Edit `data/drinks.json` to add new drinks. Each drink should include:
+Drinks are fetched live from Google Sheets via API, with intelligent caching for performance. The system supports both direct API access and webhook-based real-time updates.
+
+### Adding New Drinks Manually
+
+For developers, you can edit the JSON files in `data/drinks/`. Each drink should include:
 
 ```json
 {

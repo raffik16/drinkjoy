@@ -1,7 +1,7 @@
 # Drinkjoy Project Context
 
 ## Project Overview
-Drinkjoy is a beverage recommendation application that helps users find drinks based on their preferences and dietary restrictions.
+Drinkjoy is a beverage recommendation application that helps users find drinks based on their preferences and dietary restrictions. The application is fully powered by live Google Sheets data with real-time synchronization.
 
 ## Complete Feature List
 
@@ -76,53 +76,99 @@ Drinkjoy is a beverage recommendation application that helps users find drinks b
 
 ### API & Backend Features
 - **RESTful API Endpoints**:
-  - `/api/drinks` - Drink data management
+  - `/api/drinks` - Live drink data from Google Sheets
   - `/api/beers`, `/api/wines` - Category-specific endpoints
   - `/api/likes`, `/api/orders` - Interaction management
   - `/api/weather` - Weather integration
   - `/api/email/save-matches` - Email capture
   - `/api/analytics/*` - Analytics endpoints
+  - `/api/ai/chat` - AI chatbot with live drink data
+  - `/api/admin/sheets-sync` - Google Sheets webhook endpoint
 
-### Database Features (Supabase)
-- Like management, order tracking, email signups
-- Popular drinks view, real-time subscriptions
+### Data Management & Real-time Sync
+- **Google Sheets Integration**: Live data source for all drink information
+  - Real-time webhook updates via `/api/admin/sheets-sync`
+  - In-memory caching with TTL (Time To Live) for performance
+  - Automatic cache invalidation on data updates
+- **Supabase Database**: User interactions and analytics
+  - Like management, order tracking, email signups
+  - Popular drinks view, real-time subscriptions
 
 ### External Integrations
-- OpenWeatherMap API for weather-based recommendations
-- Resend Email Service for transactional emails
-- CocktailDB Integration for extended cocktail data
+- **Google Sheets API**: Primary data source with API key authentication
+- **OpenWeatherMap API**: Weather-based recommendations
+- **Resend Email Service**: Transactional emails
+- **Google Generative AI (Gemini)**: AI chatbot with live drink recommendations
 
 ### Development & Admin Features
 - **Form Builder Demo** (`/form-builder-demo`): Interactive form creation tools
+- **AI Chatbot**: Conversational drink recommendations using live Google Sheets data
 - Comprehensive TypeScript type system
 - Utility libraries for matching algorithms, weather, sessions, allergen detection
 
 ### Performance Features
 - Server-Side Rendering, code splitting, image optimization
-- API caching, debounced search, weather caching (30-min)
+- In-memory caching with automatic invalidation, debounced search
+- Weather caching (30-min), Google Sheets data caching (5-min TTL)
 
 ### Accessibility Features
 - WCAG 2.1 compliance, keyboard navigation
 - Screen reader support, high contrast, semantic HTML
+- Responsive design optimized for mobile and desktop
 
-## Project Structure
-- `/data/drinks/` - Contains JSON files with drink data for different categories
-- `/src/` - Source code for the application
-- Components include WizardFullResults, filtering systems, and recommendation logic
+## Project Architecture
+
+### Data Flow
+1. **Google Sheets** → Primary data source (48+ drinks)
+2. **Webhook** → Real-time updates via `/api/admin/sheets-sync`
+3. **In-Memory Cache** → Performance optimization with TTL
+4. **API Endpoints** → Serve cached data to frontend
+5. **AI Chatbot** → Uses live data for intelligent recommendations
+
+### Key Components
+- `/lib/drinkDataService.server.ts` - Server-side Google Sheets integration
+- `/lib/googleSheetsService.ts` - Google Sheets API client
+- `/lib/cache.ts` - In-memory caching system
+- `/app/api/admin/sheets-sync/route.ts` - Webhook handler
+- `/app/api/ai/chat/route.ts` - AI chatbot with live data
 
 ## Development Guidelines
 - Use TypeScript for type safety
 - Follow existing code patterns and conventions
 - Test changes thoroughly before committing
-- Consider performance when working with large drink datasets
+- All drink data comes from Google Sheets - no local JSON files
+- Use server-side data service for Google Sheets integration
+- Client-side components should use API endpoints for data
 
-## Testing
-Run tests with: `npm test`
-Run linting with: `npm run lint`
-Run type checking with: `npm run lint`
+## Environment Configuration
+Required environment variables:
+```
+GOOGLE_SHEETS_SPREADSHEET_ID=your_spreadsheet_id
+GOGOLE_SHEETS_API_KEY=your_api_key
+GOOGLE_AI_API_KEY=your_gemini_api_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_key
+```
 
-## Recent Focus Areas
-- Allergy data integration
-- Strong filtering mechanisms
-- Pre-fetch and "show more" functionality
-- Quote updates in the UI
+## Testing & Build
+- **Build**: `npm run build` - Compiles TypeScript and generates optimized build
+- **Development**: `npm run dev` - Starts development server with hot reload
+- **Linting**: `npm run lint` - TypeScript type checking and code quality
+
+## Google Sheets Structure
+Your spreadsheet should have these sheets with proper column mapping:
+- **Beer** - Beer and cider recommendations
+- **Wine** - Wine selections  
+- **Cocktail** - Cocktail recipes and recommendations
+- **Spirit** - Spirits and liquors
+- **Non_Alcoholic** - Non-alcoholic beverages
+
+Column structure: ID, Name, Category, Description, Ingredients, Prices, ABV, Flavor Profile, etc.
+
+## Recent Migrations Completed
+- ✅ Migrated from local JSON files to live Google Sheets
+- ✅ Implemented real-time webhook synchronization  
+- ✅ Connected AI chatbot to live data
+- ✅ Cleaned up unused files and debug endpoints
+- ✅ Fixed all TypeScript compilation issues
+- ✅ Responsive email modal implementation

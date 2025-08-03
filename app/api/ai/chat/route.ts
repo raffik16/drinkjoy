@@ -1,26 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
-import drinksData from '@/data/drinks';
-const drinks = (drinksData?.drinks || drinksData || []);
-
-// Debug logging for drinks data loading
-if (process.env.NODE_ENV === 'development') {
-  console.log('AI Chat: Loaded drinks count:', drinks.length);
-  const drinksWithImages = drinks.filter((d: any) => d.image_url);
-  const drinksWithoutImages = drinks.filter((d: any) => !d.image_url);
-  console.log('AI Chat: Drinks with images:', drinksWithImages.length);
-  console.log('AI Chat: Drinks without images:', drinksWithoutImages.length);
-  if (drinksWithoutImages.length > 0) {
-    console.log('AI Chat: Sample drinks without images:', drinksWithoutImages.slice(0, 5).map((d: any) => d.name));
-  }
-}
+import { drinkDataService } from '@/lib/drinkDataService.server';
+import { Drink } from '@/app/types/drinks';
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY!);
 const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 // Smart drink matching with quality scoring
-function getSmartDrinkMatches(preferences: {
+function getSmartDrinkMatches(drinks: Drink[], preferences: {
   category?: string;
   flavor?: string;
   strength?: string;
@@ -95,7 +83,7 @@ function getSmartDrinkMatches(preferences: {
         'birthday': 'celebration'
       };
       const mappedOccasion = occasionMap[preferences.occasion as keyof typeof occasionMap];
-      if (mappedOccasion && drink.occasions?.includes(mappedOccasion)) {
+      if (mappedOccasion && drink.occasions?.includes(mappedOccasion as any)) {
         score += 15;
         matchReasons.push('occasion');
       }
@@ -253,6 +241,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get drinks data
+    const { drinks } = await drinkDataService.getAllDrinks();
+    
+    // Debug logging for drinks data loading
+    if (process.env.NODE_ENV === 'development') {
+      console.log('AI Chat: Loaded drinks count:', drinks.length);
+      const drinksWithImages = drinks.filter((d: any) => d.image_url);
+      const drinksWithoutImages = drinks.filter((d: any) => !d.image_url);
+      console.log('AI Chat: Drinks with images:', drinksWithImages.length);
+      console.log('AI Chat: Drinks without images:', drinksWithoutImages.length);
+      if (drinksWithoutImages.length > 0) {
+        console.log('AI Chat: Sample drinks without images:', drinksWithoutImages.slice(0, 5).map((d: any) => d.name));
+      }
+    }
 
     const sampleDrinks = Array.isArray(drinks) ? drinks.slice(0, 5).map(drink => ({
       name: drink.name,
@@ -420,7 +422,7 @@ export async function POST(request: NextRequest) {
         // If preferences are ready, enhance with specific drink recommendations
         if (ready && preferences) {
           console.log('Getting smart drink matches for preferences:', preferences);
-          const { perfectMatches, goodMatches, otherMatches } = getSmartDrinkMatches(preferences);
+          const { perfectMatches, goodMatches, otherMatches } = getSmartDrinkMatches(drinks, preferences);
           console.log(`Smart matches - Perfect: ${perfectMatches.length}, Good: ${goodMatches.length}, Other: ${otherMatches.length}`);
           console.log('Perfect matches:', perfectMatches.map(m => `${m.drink.name} (score: ${m.score})`));
           console.log('Good matches:', goodMatches.map(m => `${m.drink.name} (score: ${m.score})`));

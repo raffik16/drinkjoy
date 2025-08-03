@@ -84,17 +84,17 @@ export function EmailCaptureModal({
           
           {/* Modal */}
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-[60] overflow-hidden mx-4"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-[60] overflow-hidden mx-4 sm:mx-6 max-h-[90vh] overflow-y-auto"
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
           >
             {/* Header */}
-            <div className="relative bg-white p-6 border-b border-gray-200">
+            <div className="relative bg-white p-4 sm:p-6 border-b border-gray-200">
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
                 aria-label="Close"
               >
                 <X className="w-4 h-4 text-gray-600" />
@@ -110,7 +110,7 @@ export function EmailCaptureModal({
                   <Sparkles className="w-8 h-8 text-purple-600" />
                 </motion.div>
                 
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                   Save Your Perfect Matches!
                 </h2>
                 <p className="text-gray-600 text-sm">
@@ -121,7 +121,7 @@ export function EmailCaptureModal({
 
             {/* Preview Card */}
             {topMatch && (
-              <div className="px-6 mb-4">
+              <div className="px-4 sm:px-6 mb-4">
                 <motion.div
                   initial={{ y: 10, opacity: 0 }}
                   animate={{ y: 0, opacity: 1 }}
@@ -148,7 +148,7 @@ export function EmailCaptureModal({
             )}
 
             {/* Form */}
-            <div className="p-6 pt-2">
+            <div className="p-4 sm:p-6 pt-2">
               {!success ? (
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
@@ -164,7 +164,7 @@ export function EmailCaptureModal({
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="your@email.com"
                         className={cn(
-                          "w-full pl-10 pr-4 py-3 rounded-lg border transition-colors",
+                          "w-full pl-10 pr-4 py-2.5 sm:py-3 rounded-lg border transition-colors text-base sm:text-sm",
                           "bg-white",
                           "placeholder-gray-400",
                           "text-gray-900",
@@ -182,12 +182,12 @@ export function EmailCaptureModal({
                     )}
                   </div>
 
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <button
                       type="submit"
                       disabled={isSubmitting || !email}
                       className={cn(
-                        "flex-1 py-3 px-4 rounded-lg font-medium transition-all",
+                        "flex-1 py-2.5 sm:py-3 px-4 rounded-lg font-medium transition-all text-base sm:text-sm",
                         "bg-gradient-to-r from-purple-600 to-purple-500 text-white",
                         "hover:from-purple-700 hover:to-purple-600",
                         "focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2",
@@ -201,7 +201,7 @@ export function EmailCaptureModal({
                     <button
                       type="button"
                       onClick={onClose}
-                      className="px-4 py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                      className="px-4 py-2.5 sm:py-3 rounded-lg font-medium text-gray-600 hover:bg-gray-50 transition-colors text-base sm:text-sm"
                     >
                       Skip
                     </button>

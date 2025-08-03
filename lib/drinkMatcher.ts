@@ -20,7 +20,7 @@ function mapOccasion(wizardOccasion: OccasionMood): Occasion {
   };
   return mapping[wizardOccasion];
 }
-import drinksData from '@/data/drinks/index.js';
+import { drinkDataService } from '@/lib/drinkDataService';
 
 interface PreferenceScore {
   drink: Drink;
@@ -35,7 +35,7 @@ export async function matchDrinksToPreferences(
   debug: boolean = false,
   limit: number = 10
 ): Promise<DrinkRecommendation[]> {
-  const allDrinks = drinksData.drinks as Drink[];
+  const { drinks: allDrinks } = await drinkDataService.getAllDrinks();
   let scores: PreferenceScore[] = [];
   
   // Get popularity data
@@ -460,7 +460,7 @@ export async function getAdditionalDrinks(
   excludeIds: string[],
   limit: number = 20
 ): Promise<DrinkRecommendation[]> {
-  const allDrinks = drinksData.drinks as Drink[];
+  const { drinks: allDrinks } = await drinkDataService.getAllDrinks();
   
   // Get popularity data
   const popularDrinks = await getPopularDrinks();

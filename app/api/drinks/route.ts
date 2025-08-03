@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAllDrinks, getDrinkById, filterDrinks } from '@/lib/drinks';
+import { getAllDrinks, getDrinkById, filterDrinks } from '@/lib/drinks.server';
 import { DrinkFilters } from '@/app/types/drinks';
 
 export async function GET(request: NextRequest) {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
 
     // If ID is provided, return single drink
     if (drinkId) {
-      const drink = getDrinkById(drinkId);
+      const drink = await getDrinkById(drinkId);
       if (!drink) {
         return NextResponse.json(
           { error: 'Drink not found' },
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
       filters.search = search;
     }
 
-    const allDrinks = getAllDrinks();
+    const allDrinks = await getAllDrinks();
     const filteredDrinks = Object.keys(filters).length > 0
       ? filterDrinks(allDrinks, filters)
       : allDrinks;

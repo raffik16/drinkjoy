@@ -4,12 +4,10 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Trash2, Search, Filter } from 'lucide-react';
 import Image from 'next/image';
-import drinksData from '@/data/drinks';
 import { EmailShareModal } from '@/app/components/ui/EmailShareModal';
 import { DrinkCategory, Drink } from '@/app/types/drinks';
 import { useSavingFeature } from '@/hooks/useSavingFeature';
-
-const drinks = (drinksData?.drinks || drinksData || []);
+import { drinkDataService } from '@/lib/drinkDataService';
 
 interface SavedDrink {
   id: string;
@@ -51,23 +49,31 @@ export function MyDrinksContent({ compact = false, className = '' }: MyDrinksCon
 
   useEffect(() => {
     // Load saved drinks from localStorage
-    const savedIds = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
-    const savedDrinksData = savedIds
-      .map((id: string) => {
-        const drink = drinks.find(d => d.id === id);
-        if (drink) {
-          return {
-            ...drink,
-            dateSaved: localStorage.getItem(`drinkjoy-saved-date-${id}`) || new Date().toISOString()
-          };
-        }
-        return null;
-      })
-      .filter(Boolean)
-      .sort((a: SavedDrink, b: SavedDrink) => new Date(b.dateSaved).getTime() - new Date(a.dateSaved).getTime());
+    const loadSavedDrinks = async () => {
+      const savedIds = JSON.parse(localStorage.getItem('drinkjoy-saved-drinks') || '[]');
+      
+      // Get all drinks from the data service
+      const { drinks } = await drinkDataService.getAllDrinks();
+      
+      const savedDrinksData = savedIds
+        .map((id: string) => {
+          const drink = drinks.find(d => d.id === id);
+          if (drink) {
+            return {
+              ...drink,
+              dateSaved: localStorage.getItem(`drinkjoy-saved-date-${id}`) || new Date().toISOString()
+            };
+          }
+          return null;
+        })
+        .filter(Boolean)
+        .sort((a: SavedDrink, b: SavedDrink) => new Date(b.dateSaved).getTime() - new Date(a.dateSaved).getTime());
+      
+      setSavedDrinks(savedDrinksData);
+      setLoading(false);
+    };
     
-    setSavedDrinks(savedDrinksData);
-    setLoading(false);
+    loadSavedDrinks();
   }, []);
 
   const removeDrink = (drinkId: string) => {
