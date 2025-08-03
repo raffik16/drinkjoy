@@ -10,10 +10,29 @@ interface DrinksResponse {
 }
 
 class DrinkDataService {
+  private initializationAttempted = false;
+
+  /**
+   * Initialize polling service if not already done
+   */
+  private ensureInitialized() {
+    if (!this.initializationAttempted && 
+        (process.env.NODE_ENV === 'production' || process.env.AUTO_INIT_SERVICES === 'true')) {
+      this.initializationAttempted = true;
+      try {
+        console.log('📊 Auto-initializing polling service...');
+        sheetsPollingService.start();
+      } catch (error) {
+        console.error('Failed to initialize polling service:', error);
+      }
+    }
+  }
+
   /**
    * Get all drinks with database caching (server-side only)
    */
   async getAllDrinks(): Promise<DrinksResponse> {
+    this.ensureInitialized();
     try {
       // Check database cache first
       const cachedDrinks = await databaseCache.getAllDrinks();

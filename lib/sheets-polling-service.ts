@@ -170,7 +170,7 @@ export class SheetsPollingService {
         last_sync: new Date().toISOString(),
         total_drinks: drinks.length,
         drinks_by_category: categoryStats,
-        error_message: null
+        error_message: undefined
       });
 
       const duration = Date.now() - startTime;
