@@ -14,10 +14,32 @@ function getSmartDrinkMatches(drinks: Drink[], preferences: {
   strength?: string;
   occasion?: string;
   allergies?: string[];
-}) {
+}, options: {
+  excludeDrinkIds?: string[];
+  offset?: number;
+  limit?: number;
+  shuffleSeed?: number;
+} = {}) {
   if (!Array.isArray(drinks)) return { perfectMatches: [], goodMatches: [], otherMatches: [] };
   
-  const scoredDrinks = drinks.map(drink => {
+  // Filter out previously shown drinks if excludeDrinkIds provided
+  const filteredDrinks = options.excludeDrinkIds && options.excludeDrinkIds.length > 0
+    ? drinks.filter(drink => !options.excludeDrinkIds!.includes(drink.name))
+    : drinks;
+  
+  // Debug logging for exclusion
+  if (options.excludeDrinkIds && options.excludeDrinkIds.length > 0) {
+    console.log(`Filtered drinks: ${drinks.length} -> ${filteredDrinks.length} (excluded ${drinks.length - filteredDrinks.length} drinks)`);
+    if (filteredDrinks.length === drinks.length) {
+      console.warn('WARNING: No drinks were actually excluded despite having excludeDrinkIds. Checking for name mismatches...');
+      const sampleExcluded = options.excludeDrinkIds.slice(0, 3);
+      const sampleAvailable = drinks.slice(0, 3).map(d => d.name);
+      console.log('Sample excluded names:', sampleExcluded);
+      console.log('Sample available names:', sampleAvailable);
+    }
+  }
+  
+  const scoredDrinks = filteredDrinks.map(drink => {
     let score = 0;
     const matchReasons = [];
 
@@ -83,7 +105,7 @@ function getSmartDrinkMatches(drinks: Drink[], preferences: {
         'birthday': 'celebration'
       };
       const mappedOccasion = occasionMap[preferences.occasion as keyof typeof occasionMap];
-      if (mappedOccasion && drink.occasions?.includes(mappedOccasion as any)) {
+      if (mappedOccasion && drink.occasions?.includes(mappedOccasion as 'casual' | 'celebration' | 'business' | 'romantic' | 'sports')) {
         score += 15;
         matchReasons.push('occasion');
       }
@@ -176,8 +198,38 @@ function getSmartDrinkMatches(drinks: Drink[], preferences: {
     return { drink, score: cappedScore, matchReasons, allergyCompatible };
   });
 
-  // Sort by score
-  const sortedDrinks = scoredDrinks.sort((a, b) => b.score - a.score);
+  // Sort by score with optional shuffling for variety
+  let sortedDrinks = scoredDrinks.sort((a, b) => b.score - a.score);
+  
+  // Add controlled randomization for "more" requests to ensure variety
+  if (options.shuffleSeed !== undefined) {
+    // Group by score tiers to maintain quality while adding variety
+    const perfectTier = sortedDrinks.filter(item => item.score >= 70 && item.allergyCompatible);
+    const goodTier = sortedDrinks.filter(item => item.score >= 40 && item.score < 70 && item.allergyCompatible);
+    const otherTier = sortedDrinks.filter(item => item.score >= 20 && item.score < 40 && item.allergyCompatible);
+    
+    // Shuffle within each tier using seed for reproducible results
+    const shuffleArray = (array: typeof sortedDrinks, seed: number) => {
+      const shuffled = [...array];
+      let currentIndex = shuffled.length;
+      let randomValue = seed;
+      
+      while (currentIndex != 0) {
+        // Simple seeded random number generator
+        randomValue = (randomValue * 9301 + 49297) % 233280;
+        const randomIndex = Math.floor((randomValue / 233280) * currentIndex);
+        currentIndex--;
+        [shuffled[currentIndex], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[currentIndex]];
+      }
+      return shuffled;
+    };
+    
+    const shuffledPerfect = shuffleArray(perfectTier, options.shuffleSeed);
+    const shuffledGood = shuffleArray(goodTier, options.shuffleSeed + 1);
+    const shuffledOther = shuffleArray(otherTier, options.shuffleSeed + 2);
+    
+    sortedDrinks = [...shuffledPerfect, ...shuffledGood, ...shuffledOther];
+  }
 
   // Categorize matches with adjusted thresholds for better category enforcement
   const perfectMatches = sortedDrinks.filter(item => item.score >= 70 && item.allergyCompatible);
@@ -201,10 +253,33 @@ function getSmartDrinkMatches(drinks: Drink[], preferences: {
     }
   }
 
+  // Apply pagination if offset/limit specified
+  let finalPerfectMatches = perfectMatches;
+  let finalGoodMatches = goodMatches;
+  let finalOtherMatches = otherMatches;
+  
+  if (options.offset || options.limit) {
+    const offset = options.offset || 0;
+    const limit = options.limit || 15;
+    
+    // Combine all matches for pagination
+    const allMatches = [...perfectMatches, ...goodMatches, ...otherMatches];
+    const paginatedMatches = allMatches.slice(offset, offset + limit);
+    
+    // Re-categorize paginated results
+    finalPerfectMatches = paginatedMatches.filter(item => item.score >= 70);
+    finalGoodMatches = paginatedMatches.filter(item => item.score >= 40 && item.score < 70);
+    finalOtherMatches = paginatedMatches.filter(item => item.score >= 20 && item.score < 40);
+  } else {
+    finalPerfectMatches = perfectMatches.slice(0, 5);
+    finalGoodMatches = goodMatches.slice(0, 5);
+    finalOtherMatches = otherMatches.slice(0, 5);
+  }
+
   return {
-    perfectMatches: perfectMatches.slice(0, 5),
-    goodMatches: goodMatches.slice(0, 5),
-    otherMatches: otherMatches.slice(0, 5)
+    perfectMatches: finalPerfectMatches,
+    goodMatches: finalGoodMatches,
+    otherMatches: finalOtherMatches
   };
 }
 
@@ -212,6 +287,83 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+// Helper function to detect "more" requests
+function isMoreRequest(message: string): boolean {
+  const morePatterns = [
+    /\bmore\b/i,
+    /\bshow\s+more\b/i,
+    /\bother\s+options?\b/i,
+    /\bdifferent\s+(?:drinks?|options?)\b/i,
+    /\bwhat\s+else\b/i,
+    /\banything\s+else\b/i,
+    /\bmore\s+(?:drinks?|recommendations?|suggestions?)\b/i,
+    /\bother\s+(?:drinks?|recommendations?|suggestions?)\b/i,
+    /\bnext\b/i,
+    /\bcontinue\b/i,
+    /\bkeep\s+going\b/i,
+    /\bsee\s+more\b/i,
+    /\badditional\s+(?:drinks?|options?)\b/i,
+    /\bmore\s+like\s+th(?:is|ese)\b/i
+  ];
+  
+  return morePatterns.some(pattern => pattern.test(message.trim()));
+}
+
+// Helper function to extract shown drinks from conversation history
+function getShownDrinksFromHistory(conversationHistory: Array<{role: string; content: string; drinks?: Array<{name: string}>}>): string[] {
+  const shownDrinks: string[] = [];
+  
+  conversationHistory.forEach(msg => {
+    if (msg.role === 'assistant' && msg.drinks && Array.isArray(msg.drinks)) {
+      msg.drinks.forEach(drink => {
+        if (drink.name && !shownDrinks.includes(drink.name)) {
+          shownDrinks.push(drink.name);
+        }
+      });
+    }
+  });
+  
+  return shownDrinks;
+}
+
+// Helper function to determine if user has established preferences
+function hasEstablishedPreferences(conversationHistory: Array<{role: string; content: string}>): { 
+  hasPrefs: boolean; 
+  lastPreferences?: any;
+  pageNumber: number;
+} {
+  let lastPreferences = null;
+  let pageNumber = 0;
+  
+  // Look through conversation history for previous preference extraction
+  for (let i = conversationHistory.length - 1; i >= 0; i--) {
+    const msg = conversationHistory[i];
+    if (msg.role === 'assistant') {
+      // Count how many times we've shown recommendations (for pagination)
+      if (msg.content.includes('Perfect Match') || msg.content.includes('Great Option') || msg.content.includes('Here are some')) {
+        pageNumber++;
+      }
+      
+      // Try to extract preferences from previous AI responses
+      const prefsMatch = msg.content.match(/preferences.*?for\s+([^,]+),?\s*([^,]+)?/i);
+      if (prefsMatch) {
+        // This is a simplified extraction - in a real scenario we'd want more robust parsing
+        lastPreferences = {
+          detectedFromHistory: true,
+          rawMatch: prefsMatch[0]
+        };
+        break;
+      }
+    }
+  }
+  
+  return {
+    hasPrefs: lastPreferences !== null,
+    lastPreferences,
+    pageNumber
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -267,8 +419,55 @@ export async function POST(request: NextRequest) {
       glass_type: drink.glass_type
     })) : [];
 
+    // Check if this is a "more" request with established preferences
+    const isRequestingMore = isMoreRequest(message);
+    const shownDrinks = getShownDrinksFromHistory(conversationHistory as Array<{role: string; content: string; drinks?: Array<{name: string}>}>);
+    const { hasPrefs, pageNumber } = hasEstablishedPreferences(conversationHistory);
+    
+    console.log('More request analysis:', {
+      isRequestingMore,
+      hasEstablishedPrefs: hasPrefs,
+      shownDrinksCount: shownDrinks.length,
+      pageNumber,
+      shownDrinks: shownDrinks.slice(0, 10) // Log first 10 for debugging
+    });
+
+    // Enhanced debugging for duplicate drinks issue
+    if (isRequestingMore && shownDrinks.length === 0) {
+      console.warn('WARNING: "More" request detected but no previous drinks found in history. This may cause duplicates.');
+      console.log('Conversation history structure:', conversationHistory.map((msg: { role: string; content: string; drinks?: unknown[] }) => ({
+        role: msg.role,
+        hasDrinks: !!(msg.drinks),
+        drinksCount: (msg.drinks || []).length,
+        contentPreview: msg.content?.substring(0, 100) + '...'
+      })));
+    }
+
     // Conversational wizard system prompt for beverage recommendations
     const systemPrompt = `You are an expert beverage consultant for Drinkjoy who guides users through discovering their perfect drink preferences in a conversational way. Your role is to systematically gather preference information like the Drinkjoy wizard, but in natural conversation with interactive buttons.
+
+    IMPORTANT: ENHANCED "MORE" REQUEST HANDLING
+    When users ask for "more", "show more", "other options", "what else", etc., and they already have established preferences from previous conversation:
+    - Immediately provide fresh drink recommendations using their known preferences
+    - Use variety-enhancing techniques to show different drinks than before
+    - Skip preference gathering and go straight to recommendations
+    - Make responses enthusiastic and engaging
+    - Set ready=true immediately for "more" requests with established preferences
+    
+    CONTEXT AWARENESS:
+    - Current request is requesting more: ${isRequestingMore}
+    - User has established preferences: ${hasPrefs}
+    - Previously shown drinks count: ${shownDrinks.length}
+    - Current page number: ${pageNumber}
+    ${shownDrinks.length > 0 ? `- Previously shown drinks: ${shownDrinks.slice(0, 10).join(', ')}${shownDrinks.length > 10 ? '...' : ''}` : ''}
+    
+    SPECIAL HANDLING FOR "MORE" REQUESTS:
+    If the user is asking for "more" or similar and you detect they have previous preferences from conversation:
+    1. Extract their preferences from conversation context
+    2. Set ready=true immediately 
+    3. Provide enthusiastic, varied recommendations
+    4. Use phrases like "Here are more great options!" or "Let's explore some fresh choices!"
+    5. Don't ask for preferences again - use what you already know
 
     CORE MISSION:
     You should ask strategic questions to gather the key preference data needed for great drink recommendations. Guide users through the same preference discovery flow as the Drinkjoy wizard, but make it conversational and engaging.
@@ -384,11 +583,22 @@ export async function POST(request: NextRequest) {
     });
     conversationText += `user: ${message}\nassistant: `;
 
-    // Call Gemini API
-    console.log('Making API call to Gemini with prompt length:', conversationText.length);
-    const result = await model.generateContent(conversationText);
-    const response = await result.response;
-    const responseText = response.text();
+    // For "more" requests with established preferences, we can sometimes skip AI generation
+    // and go directly to drink matching for faster response times
+    let responseText = '';
+    const skipAIGeneration = false;
+    
+    // REMOVED PROBLEMATIC FAST PATH: The fast path was causing issues by using generic preferences
+    // Instead, we'll always go through the AI to get proper preference handling for "more" requests
+    // This ensures consistency and proper preference extraction from conversation history
+    
+    if (!skipAIGeneration) {
+      // Call Gemini API for complex preference gathering or initial requests
+      console.log('Making API call to Gemini with prompt length:', conversationText.length);
+      const result = await model.generateContent(conversationText);
+      const response = await result.response;
+      responseText = response.text();
+    }
 
     // Try to extract JSON response with conversation state
     let preferences: {
@@ -404,6 +614,12 @@ export async function POST(request: NextRequest) {
     let drinksForMessage = null;
     let buttons: Array<{text: string; value: string; type: string}> = [];
     let missingPrefs: string[] = [];
+    const matchingOptions: {
+      excludeDrinkIds?: string[];
+      offset?: number;
+      limit?: number;
+      shuffleSeed?: number;
+    } = {};
 
     // Look for JSON response with preferences, buttons, and message
     const jsonMatch = responseText.match(/\{[\s\S]*("ready"|"preferences"|"message"|"buttons")[\s\S]*\}/);
@@ -418,11 +634,68 @@ export async function POST(request: NextRequest) {
         buttons = parsedJson.buttons || [];
         missingPrefs = parsedJson.missing_prefs || [];
         extractedMessage = parsedJson.message || responseText.replace(jsonMatch[0], '').trim();
+        
+        // Special handling: If this is a "more" request and we have conversation history with drinks,
+        // try to infer preferences from previously shown drinks to provide immediate recommendations
+        if (isRequestingMore && !ready && shownDrinks.length > 0 && (!preferences || Object.keys(preferences).length === 0)) {
+          console.log('Attempting to infer preferences from shown drinks for "more" request');
+          
+          // Simple preference inference from conversation patterns
+          // This is a fallback to keep the conversation flowing
+          const inferredPreferences = {
+            category: 'any', // Keep it broad for variety
+            flavor: 'any',
+            strength: 'medium',
+            occasion: 'casual',
+            allergies: ['none']
+          };
+          
+          // Override with any detected preferences from JSON
+          preferences = { ...inferredPreferences, ...preferences };
+          ready = true;
+          confidence = 60; // Moderate confidence for inferred preferences
+          
+          console.log('Inferred preferences for "more" request:', preferences);
+        }
 
-        // If preferences are ready, enhance with specific drink recommendations
+        // Enhanced handling for "more" requests and regular preference completion
         if (ready && preferences) {
+          // Additional fallback: If we still don't have good preferences but user wants more,
+          // use very broad preferences to ensure we can show something
+          if (isRequestingMore && (!preferences.category || preferences.category === 'any')) {
+            preferences = {
+              category: 'any',
+              flavor: 'any', 
+              strength: 'medium',
+              occasion: 'casual',
+              allergies: preferences.allergies || ['none']
+            };
+            console.log('Applied broad fallback preferences for "more" request:', preferences);
+          }
           console.log('Getting smart drink matches for preferences:', preferences);
-          const { perfectMatches, goodMatches, otherMatches } = getSmartDrinkMatches(drinks, preferences);
+          
+          // Determine matching options based on context
+          // (matchingOptions declared at function scope above)
+          
+          // For "more" requests, exclude previously shown drinks and add variety
+          if (isRequestingMore) {
+            matchingOptions.excludeDrinkIds = shownDrinks.length > 0 ? shownDrinks : [];
+            matchingOptions.shuffleSeed = Date.now() + pageNumber + Math.floor(Math.random() * 1000); // Ensure different results each time
+            matchingOptions.limit = 12; // Show more options for "more" requests
+            console.log('Applying "more" request enhancements:', {
+              ...matchingOptions,
+              excludedDrinksCount: matchingOptions.excludeDrinkIds.length,
+              excludedDrinks: matchingOptions.excludeDrinkIds.slice(0, 5) // Log first 5 excluded
+            });
+            
+            // Additional safety check - if we have very few drinks to exclude but many total drinks,
+            // ensure we're actually getting different results
+            if (matchingOptions.excludeDrinkIds.length > 0 && drinks.length > 50) {
+              console.log(`Excluding ${matchingOptions.excludeDrinkIds.length} drinks out of ${drinks.length} total drinks`);
+            }
+          }
+          
+          const { perfectMatches, goodMatches, otherMatches } = getSmartDrinkMatches(drinks, preferences, matchingOptions);
           console.log(`Smart matches - Perfect: ${perfectMatches.length}, Good: ${goodMatches.length}, Other: ${otherMatches.length}`);
           console.log('Perfect matches:', perfectMatches.map(m => `${m.drink.name} (score: ${m.score})`));
           console.log('Good matches:', goodMatches.map(m => `${m.drink.name} (score: ${m.score})`));
@@ -560,29 +833,55 @@ export async function POST(request: NextRequest) {
               }
             }
 
-            // Simplify the message when showing drinks grid
-            extractedMessage = extractedMessage.replace(/\n\n🍹[\s\S]*$/, '');
+            // Enhance messaging for "more" requests vs initial recommendations
+            if (isRequestingMore && shownDrinks.length > 0) {
+              // Customize message for "more" requests
+              const moreMessages = [
+                `Here are some fresh recommendations for you!`,
+                `Let's explore more options that match your taste!`,
+                `I found some great alternatives you'll love!`,
+                `Here are more fantastic choices for you!`,
+                `Let's discover some new favorites!`
+              ];
+              const randomMessage = moreMessages[Math.floor(Math.random() * moreMessages.length)];
+              extractedMessage = `${randomMessage} Based on your preferences${pageNumber > 1 ? ` (page ${pageNumber + 1})` : ''}:`;
+            } else {
+              // Simplify the message when showing drinks grid for initial recommendations
+              extractedMessage = extractedMessage.replace(/\n\n🍹[\s\S]*$/, '');
+            }
             
             const perfectCount = perfectMatches.length;
             const goodCount = goodMatches.length;
             const alternativeCount = allMatches.filter(m => m.matchQuality === 'alternative').length;
             
-            if (perfectCount > 0) {
-              extractedMessage += `\n\n🎯 **${perfectCount} Perfect Match${perfectCount > 1 ? 'es' : ''}:**`;
-              if (goodCount > 0) {
-                // Special case for exactly 3 good matches
-                if (goodCount === 3) {
-                  extractedMessage += `\n✨ **3 Great Options for You:**`;
-                } else {
-                  extractedMessage += `\n✨ **Plus ${goodCount} Good Alternative${goodCount > 1 ? 's' : ''}:**`;
+            // Customize section headers based on context
+            if (isRequestingMore && shownDrinks.length > 0) {
+              // More engaging headers for "more" requests
+              if (perfectCount > 0) {
+                extractedMessage += `\n\n🎯 **${perfectCount} New Perfect Match${perfectCount > 1 ? 'es' : ''}:**`;
+                if (goodCount > 0) {
+                  extractedMessage += `\n✨ **Plus ${goodCount} More Great Option${goodCount > 1 ? 's' : ''}:**`;
                 }
+              } else if (goodCount > 0) {
+                extractedMessage += `\n\n✨ **${goodCount} Fresh Option${goodCount > 1 ? 's' : ''} to Try:**`;
               }
-            } else if (goodCount > 0) {
-              // Special case for exactly 3 good matches when no perfect matches
-              if (goodCount === 3) {
-                extractedMessage += `\n\n✨ **3 Great Options for You:**`;
-              } else {
-                extractedMessage += `\n\n✨ **${goodCount} Great Option${goodCount > 1 ? 's' : ''} for You:**`;
+            } else {
+              // Original headers for initial recommendations
+              if (perfectCount > 0) {
+                extractedMessage += `\n\n🎯 **${perfectCount} Perfect Match${perfectCount > 1 ? 'es' : ''}:**`;
+                if (goodCount > 0) {
+                  if (goodCount === 3) {
+                    extractedMessage += `\n✨ **3 Great Options for You:**`;
+                  } else {
+                    extractedMessage += `\n✨ **Plus ${goodCount} Good Alternative${goodCount > 1 ? 's' : ''}:**`;
+                  }
+                }
+              } else if (goodCount > 0) {
+                if (goodCount === 3) {
+                  extractedMessage += `\n\n✨ **3 Great Options for You:**`;
+                } else {
+                  extractedMessage += `\n\n✨ **${goodCount} Great Option${goodCount > 1 ? 's' : ''} for You:**`;
+                }
               }
             }
             
@@ -605,7 +904,23 @@ export async function POST(request: NextRequest) {
                 extractedMessage += `\n\n💡 **Also worth trying:**`;
               }
             } else if (perfectCount === 0 && goodCount === 0) {
-              extractedMessage += "\n\n🍹 **Here are some recommendations:**";
+              if (isRequestingMore && shownDrinks.length > 0) {
+                extractedMessage += "\n\n🍹 **Here are some different options to explore:**";
+              } else {
+                extractedMessage += "\n\n🍹 **Here are some recommendations:**";
+              }
+            }
+            
+            // Add encouraging footer for "more" requests
+            if (isRequestingMore && allMatches.length > 0) {
+              const encouragingMessages = [
+                "\n\n💫 *Want even more options? Just ask!*",
+                "\n\n🔄 *I have plenty more where these came from!*",
+                "\n\n✨ *There's always more to discover - keep exploring!*",
+                "\n\n🎭 *Each recommendation opens new possibilities!*"
+              ];
+              const randomFooter = encouragingMessages[Math.floor(Math.random() * encouragingMessages.length)];
+              extractedMessage += randomFooter;
             }
           }
         }
@@ -621,7 +936,17 @@ export async function POST(request: NextRequest) {
       messages: [
         ...conversationHistory,
         { role: 'user', content: message, timestamp: new Date().toISOString() },
-        { role: 'assistant', content: extractedMessage, timestamp: new Date().toISOString() }
+        { 
+          role: 'assistant', 
+          content: extractedMessage, 
+          timestamp: new Date().toISOString(),
+          // CRITICAL FIX: Include drinks data in conversation history for proper tracking
+          drinks: drinksForMessage ? drinksForMessage.map(drink => ({
+            name: drink.name,
+            category: drink.category,
+            matchQuality: drink.matchQuality
+          })) : []
+        }
       ],
       extracted_preferences: preferences,
       confidence_score: confidence,
@@ -651,7 +976,20 @@ export async function POST(request: NextRequest) {
       sessionId,
       drinks: drinksForMessage,
       buttons,
-      missingPrefs
+      missingPrefs,
+      // Add metadata for client-side tracking and performance insights
+      isMoreRequest: isRequestingMore,
+      pageNumber: pageNumber + (isRequestingMore ? 1 : 0),
+      shownDrinksCount: shownDrinks.length + (drinksForMessage?.length || 0),
+      previouslyShownDrinks: shownDrinks, // For debugging duplicate issues
+      usedFastPath: skipAIGeneration,
+      processingTimeMs: Date.now() - (conversationData.created_at ? new Date(conversationData.created_at).getTime() : Date.now()),
+      // Debug info for duplicate tracking
+      debugInfo: {
+        totalDrinksInDatabase: drinks.length,
+        drinksExcludedCount: (matchingOptions?.excludeDrinkIds?.length || 0),
+        filteredDrinksCount: drinksForMessage ? drinks.length - (matchingOptions?.excludeDrinkIds?.length || 0) : drinks.length
+      }
     });
 
   } catch (error: unknown) {
