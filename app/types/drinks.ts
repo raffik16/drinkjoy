@@ -9,6 +9,9 @@ export interface Drink {
   category: DrinkCategory;
   description: string;
   ingredients: string[];
+  price?: string;
+  price_16oz?: string;
+  price_24oz?: string;
   abv: number; // Alcohol by volume percentage
   flavor_profile: FlavorProfile[];
   strength: DrinkStrength;

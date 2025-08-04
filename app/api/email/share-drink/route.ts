@@ -26,6 +26,11 @@ export async function POST(request: NextRequest) {
     
     // Send email with drink recommendation
     try {
+      console.log('🔧 Attempting to send email with Resend...');
+      console.log('From:', process.env.FROM_EMAIL || 'Drinkjoy <onboarding@resend.dev>');
+      console.log('To:', email);
+      console.log('API Key configured:', !!process.env.RESEND_API_KEY);
+      
       const { error } = await resend.emails.send({
         from: process.env.FROM_EMAIL || 'Drinkjoy <onboarding@resend.dev>',
         to: [email],
@@ -34,12 +39,14 @@ export async function POST(request: NextRequest) {
       })
       
       if (error) {
-        console.error('Error sending drink share email:', error)
+        console.error('Resend API error:', error);
         return NextResponse.json(
-          { error: 'Failed to send email' },
+          { error: `Email service error: ${error.message || error}` },
           { status: 500 }
         )
       }
+      
+      console.log('✅ Email sent successfully');
       
       return NextResponse.json({
         success: true,

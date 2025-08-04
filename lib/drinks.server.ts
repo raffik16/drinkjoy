@@ -1,8 +1,9 @@
+import 'server-only';
 import { Drink, DrinkFilters, DrinkRecommendation } from '@/app/types/drinks';
 import { WeatherData } from '@/app/types/weather';
 import { getTemperatureCategory, getTimeOfDay } from '@/lib/utils';
 import { isCurrentlyHappyHour } from '@/lib/happyHour';
-import { drinkDataService } from '@/lib/drinkDataService';
+import { drinkDataService } from '@/lib/drinkDataService.server';
 
 export async function getAllDrinks(): Promise<Drink[]> {
   const { drinks } = await drinkDataService.getAllDrinks();
