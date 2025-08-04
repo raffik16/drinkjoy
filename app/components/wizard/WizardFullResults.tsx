@@ -287,7 +287,7 @@ export default function WizardFullResults({
               {/* Drink Info */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-gray-800 truncate">
+                  <h4 className="font-semibold text-gray-800">
                     {rec.drink.name}
                   </h4>
                   <motion.div 
@@ -324,12 +324,14 @@ export default function WizardFullResults({
                         <span className="font-medium text-purple-800">Why this matches:</span>
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        {rec.reasons.map((reason, idx) => (
-                          <span key={idx} className="inline-flex items-center gap-1 bg-white text-purple-700 px-2 py-0.5 rounded-full text-xs border border-purple-300">
-                            <span className="w-1.5 h-1.5 bg-purple-500 rounded-full"></span>
-                            {reason}
-                          </span>
-                        ))}
+                        {rec.reasons
+                          .filter(reason => reason && reason.trim().length > 0)
+                          .map((reason, idx) => (
+                            <span key={idx} className="inline-flex items-center gap-1 bg-white text-purple-700 px-2 py-0.5 rounded-full text-xs border border-purple-300">
+                              <span className="w-1.5 h-1.5 bg-purple-500 rounded-full flex-shrink-0"></span>
+                              {reason}
+                            </span>
+                          ))}
                       </div>
                     </div>
                   </motion.div>
