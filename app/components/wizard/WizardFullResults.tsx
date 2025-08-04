@@ -497,6 +497,8 @@ export default function WizardFullResults({
           category: allRecommendations[0].drink.category,
           image_url: allRecommendations[0].drink.image_url
         } : undefined}
+        matchedDrinks={allRecommendations}
+        preferences={preferences}
         onSubmit={(email) => {
           console.log('Email captured:', email);
           // Email is already saved by the modal

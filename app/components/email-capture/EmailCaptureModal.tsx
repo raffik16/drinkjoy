@@ -14,6 +14,8 @@ interface EmailCaptureModalProps {
     category: string;
     image_url?: string;
   };
+  matchedDrinks?: any[];
+  preferences?: any;
   onSubmit?: (email: string) => void;
 }
 
@@ -22,6 +24,8 @@ export function EmailCaptureModal({
   onClose, 
   matchCount = 12,
   topMatch,
+  matchedDrinks = [],
+  preferences = {},
   onSubmit 
 }: EmailCaptureModalProps) {
   const [email, setEmail] = useState('');
@@ -48,8 +52,8 @@ export function EmailCaptureModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email,
-          sessionId: localStorage.getItem('drinkjoy-session') || '',
-          matchCount
+          matchedDrinks,
+          preferences
         })
       });
 
@@ -84,14 +88,14 @@ export function EmailCaptureModal({
           
           {/* Modal */}
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-[60] overflow-hidden mx-4 sm:mx-6 max-h-[90vh] overflow-y-auto"
+            className="fixed inset-4 sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:inset-auto w-auto sm:w-full sm:max-w-md bg-white rounded-2xl shadow-2xl z-[60] overflow-hidden max-h-[calc(100vh-2rem)] overflow-y-auto"
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
           >
             {/* Header */}
-            <div className="relative bg-white p-4 sm:p-6 border-b border-gray-200">
+            <div className="relative bg-white p-4 sm:p-6">
               <button
                 onClick={onClose}
                 className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"

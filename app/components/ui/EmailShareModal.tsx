@@ -51,11 +51,12 @@ export function EmailShareModal({
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send recommendation');
+        const data = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(data.error || `Server error: ${response.status}`);
       }
+
+      const data = await response.json();
 
       setSuccess(true);
       setTimeout(() => {
@@ -65,7 +66,9 @@ export function EmailShareModal({
 
     } catch (err) {
       console.error('Error sharing drink:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send recommendation');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send recommendation';
+      console.error('Full error details:', { err, email, drink });
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -185,7 +188,7 @@ export function EmailShareModal({
                         onChange={(e) => setEmail(e.target.value)}
                         required
                         placeholder="friend@example.com"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                   </div>
@@ -202,7 +205,7 @@ export function EmailShareModal({
                         value={senderName}
                         onChange={(e) => setSenderName(e.target.value)}
                         placeholder="Your name"
-                        className="w-full pl-10 pr-4 py-3 border border-gray-600 bg-gray-800 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                       />
                     </div>
                   </div>
@@ -217,7 +220,7 @@ export function EmailShareModal({
                       onChange={(e) => setSenderMessage(e.target.value)}
                       placeholder="I thought you might enjoy this drink! It's perfect for..."
                       rows={3}
-                      className="w-full px-4 py-3 border border-gray-600 bg-gray-800 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
+                      className="w-full px-4 py-3 border border-gray-300 bg-white text-gray-900 placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-none"
                       maxLength={500}
                     />
                     <p className="text-xs text-gray-500 mt-1">{senderMessage.length}/500</p>
