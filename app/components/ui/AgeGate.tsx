@@ -78,16 +78,16 @@ export const AgeGate: React.FC<AgeGateProps> = ({ onVerified }) => {
               </p>
             </div>
             
-            <div className="flex gap-4 mb-4">
+            <div className="flex gap-3 mb-4">
               <button
                 onClick={handleYes}
-                className="flex-1 bg-gradient-to-r from-purple-500 to-rose-500 hover:from-purple-600 hover:to-rose-600 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+                className="flex-1 bg-gradient-to-r from-purple-500 to-rose-500 hover:from-purple-600 hover:to-rose-600 text-white font-semibold py-4 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] text-sm sm:text-base whitespace-nowrap"
               >
-                Yes, I&apos;m 21+
+                Yes, 21+
               </button>
               <button
                 onClick={handleNo}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200"
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-4 px-4 rounded-lg transition-colors duration-200 text-sm sm:text-base"
               >
                 No
               </button>
