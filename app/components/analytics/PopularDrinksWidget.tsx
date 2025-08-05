@@ -11,8 +11,6 @@ interface PopularDrink {
 
 export default function PopularDrinksWidget() {
   const [popularDrinks, setPopularDrinks] = useState<PopularDrink[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPopularDrinks = async () => {
@@ -21,58 +19,20 @@ export default function PopularDrinksWidget() {
         if (response.ok) {
           const data = await response.json();
           setPopularDrinks(data.data || []);
-        } else {
-          setError('Failed to fetch popular drinks');
         }
       } catch (err) {
-        setError('Error loading analytics data');
         console.error('Error fetching popular drinks:', err);
-      } finally {
-        setIsLoading(false);
       }
     };
 
     fetchPopularDrinks();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Popular Drinks</h3>
-        </div>
-        <div className="animate-pulse">
-          <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="flex items-center justify-between">
-                <div className="h-4 bg-gray-200 rounded w-32"></div>
-                <div className="h-4 bg-gray-200 rounded w-16"></div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <div className="flex items-center gap-2 mb-4">
-          <TrendingUp className="w-5 h-5 text-blue-500" />
-          <h3 className="text-lg font-semibold">Popular Drinks</h3>
-        </div>
-        <p className="text-red-600 text-sm">{error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
       <div className="flex items-center gap-2 mb-4">
         <TrendingUp className="w-5 h-5 text-blue-500" />
-        <h3 className="text-lg font-semibold">Popular Drinks</h3>
+        <h3 className="text-lg text-gray-800 font-semibold">Popular Drinks</h3>
         <span className="text-sm text-gray-500">({popularDrinks.length} drinks)</span>
       </div>
       

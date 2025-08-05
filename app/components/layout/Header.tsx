@@ -55,16 +55,6 @@ export const Header: React.FC<HeaderProps> = ({ isDarkMode, onToggleDarkMode, lo
             <div>
               <div className="relative overflow-hidden">
                 <motion.p 
-                  className="text-xs text-gray-600 dark:text-gray-400"
-                  animate={{ 
-                    y: showLocation && location ? -20 : 0,
-                    opacity: showLocation && location ? 0 : 1 
-                  }}
-                  transition={{ duration: 0.3 }}
-                >
-                  drinks made easy everytime
-                </motion.p>
-                <motion.p 
                   className="text-xs text-blue-600 dark:text-blue-400 font-medium absolute top-0 left-0"
                   animate={{ 
                     y: showLocation && location ? 0 : 20,
