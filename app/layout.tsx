@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Open_Sans, Inter } from "next/font/google";
 import "./globals.css";
+import { PWAManifest } from "@/components/PWAManifest";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -41,7 +42,6 @@ export const metadata: Metadata = {
     description: "Answer a few questions to discover drinks perfectly matched to your taste preferences and dietary needs!",
     images: ["/og-image.jpg"],
   },
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -76,6 +76,7 @@ export default function RootLayout({
       <body
         className={`${openSans.variable} ${inter.variable} antialiased`}
       >
+        <PWAManifest />
         {children}
       </body>
     </html>
