@@ -47,9 +47,19 @@ export const analytics = {
 
   // Drink order events
   trackDrinkOrder: (drinkId: string, drinkName: string, sessionId: string) => {
-    if (typeof window === 'undefined' || !window.gtag) return;
+    console.log('🍸 Tracking drink order:', { drinkId, drinkName, sessionId });
     
-    window.gtag('event', 'drink_order', {
+    if (typeof window === 'undefined') {
+      console.log('❌ Window is undefined');
+      return;
+    }
+    
+    if (!window.gtag) {
+      console.log('❌ gtag not available:', { hasDataLayer: !!window.dataLayer });
+      return;
+    }
+    
+    const eventData = {
       event_category: 'drinks',
       event_label: drinkName,
       custom_parameters: {
@@ -58,7 +68,10 @@ export const analytics = {
         session_id: sessionId,
       },
       value: 1,
-    });
+    };
+    
+    console.log('✅ Sending drink_order event to GA:', eventData);
+    window.gtag('event', 'drink_order', eventData);
   },
 
   // Drink like/bookmark events

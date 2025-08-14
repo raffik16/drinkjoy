@@ -7,7 +7,19 @@ import { initGA, GA_MEASUREMENT_ID } from '@/lib/analytics';
 export default function GoogleAnalytics() {
   useEffect(() => {
     // Initialize GA once the script is loaded
+    console.log('🔧 Initializing Google Analytics...');
     initGA();
+    
+    // Check if GA loaded successfully after a short delay
+    setTimeout(() => {
+      if (typeof window !== 'undefined') {
+        console.log('📊 GA Status:', {
+          hasGtag: !!window.gtag,
+          hasDataLayer: !!window.dataLayer,
+          measurementId: GA_MEASUREMENT_ID
+        });
+      }
+    }, 1000);
   }, []);
 
   return (
