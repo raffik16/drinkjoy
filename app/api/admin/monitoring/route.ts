@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { drinkDataService } from '@/lib/drinkDataService.server';
-import { databaseCache } from '@/lib/database-cache';
 
 /**
  * Get comprehensive monitoring data for the polling system
@@ -17,12 +16,14 @@ export async function GET(request: NextRequest) {
     
     // Get sheets metadata
     let sheetsMetadata = null;
-    if (spreadsheetId) {
-      sheetsMetadata = await databaseCache.getSheetsMetadata(spreadsheetId);
-    }
+    // TODO: Re-add cache layer
+    // if (spreadsheetId) {
+    //   sheetsMetadata = await databaseCache.getSheetsMetadata(spreadsheetId);
+    // }
     
     // Check cache health
-    const isCacheHealthy = await databaseCache.isCacheHealthy(30); // 30 minutes
+    const isCacheHealthy = true; // TODO: Re-add cache health check
+    // const isCacheHealthy = await databaseCache.isCacheHealthy(30); // 30 minutes
     
     // Calculate health score
     const healthScore = calculateHealthScore({

@@ -1,6 +1,5 @@
 import 'server-only';
 import { googleSheetsService } from './googleSheetsService';
-import { databaseCache } from './database-cache';
 import { Drink } from '@/app/types/drinks';
 
 interface PollingConfig {
@@ -133,11 +132,12 @@ export class SheetsPollingService {
       console.log('📊 Starting Google Sheets sync...');
 
       // Update sync status in database
-      await databaseCache.updateSheetsMetadata({
-        spreadsheet_id: this.config.spreadsheetId!,
-        sync_status: 'syncing',
-        last_sync: new Date().toISOString()
-      });
+      // TODO: Re-add cache layer
+      // await databaseCache.updateSheetsMetadata({
+      //   spreadsheet_id: this.config.spreadsheetId!,
+      //   sync_status: 'syncing',
+      //   last_sync: new Date().toISOString()
+      // });
 
       // Check if we need to sync (simple change detection)
       const shouldSync = await this.shouldPerformSync();
@@ -156,22 +156,24 @@ export class SheetsPollingService {
       }
 
       // Update database cache
-      const cacheUpdateSuccess = await databaseCache.updateAllDrinks(drinks);
-      
-      if (!cacheUpdateSuccess) {
-        throw new Error('Failed to update database cache');
-      }
+      // TODO: Re-add cache layer
+      // const cacheUpdateSuccess = await databaseCache.updateAllDrinks(drinks);
+      // 
+      // if (!cacheUpdateSuccess) {
+      //   throw new Error('Failed to update database cache');
+      // }
 
       // Update metadata with success status
       const categoryStats = this.calculateCategoryStats(drinks);
-      await databaseCache.updateSheetsMetadata({
-        spreadsheet_id: this.config.spreadsheetId!,
-        sync_status: 'success',
-        last_sync: new Date().toISOString(),
-        total_drinks: drinks.length,
-        drinks_by_category: categoryStats,
-        error_message: undefined
-      });
+      // TODO: Re-add cache layer
+      // await databaseCache.updateSheetsMetadata({
+      //   spreadsheet_id: this.config.spreadsheetId!,
+      //   sync_status: 'success',
+      //   last_sync: new Date().toISOString(),
+      //   total_drinks: drinks.length,
+      //   drinks_by_category: categoryStats,
+      //   error_message: undefined
+      // });
 
       const duration = Date.now() - startTime;
       console.log(`✅ Sync completed successfully in ${duration}ms: ${drinks.length} drinks cached`);
@@ -192,14 +194,15 @@ export class SheetsPollingService {
       console.error(`❌ Sync failed (attempt ${this.consecutiveErrors}):`, errorMessage);
 
       // Update metadata with error status
-      await databaseCache.updateSheetsMetadata({
-        spreadsheet_id: this.config.spreadsheetId!,
-        sync_status: 'error',
-        last_sync: new Date().toISOString(),
-        error_message: errorMessage
-      }).catch(metaError => {
-        console.error('Failed to update error metadata:', metaError);
-      });
+      // TODO: Re-add cache layer
+      // await databaseCache.updateSheetsMetadata({
+      //   spreadsheet_id: this.config.spreadsheetId!,
+      //   sync_status: 'error',
+      //   last_sync: new Date().toISOString(),
+      //   error_message: errorMessage
+      // }).catch(metaError => {
+      //   console.error('Failed to update error metadata:', metaError);
+      // });
 
       // If too many consecutive errors, temporarily disable polling
       if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
@@ -221,33 +224,36 @@ export class SheetsPollingService {
   private async shouldPerformSync(): Promise<boolean> {
     try {
       // Always sync if cache is empty or unhealthy
-      const isCacheHealthy = await databaseCache.isCacheHealthy(this.config.intervalMs / 1000 / 60);
-      
-      if (!isCacheHealthy) {
-        console.log('📊 Cache is empty or stale, sync needed');
-        return true;
-      }
+      // TODO: Re-add cache layer
+      // const isCacheHealthy = await databaseCache.isCacheHealthy(this.config.intervalMs / 1000 / 60);
+      // 
+      // if (!isCacheHealthy) {
+      //   console.log('📊 Cache is empty or stale, sync needed');
+      //   return true;
+      // }
 
       // Get last sync metadata
-      const metadata = await databaseCache.getSheetsMetadata(this.config.spreadsheetId!);
-      
-      if (!metadata) {
-        console.log('📊 No sync metadata found, sync needed');
-        return true;
-      }
+      // TODO: Re-add cache layer
+      // const metadata = await databaseCache.getSheetsMetadata(this.config.spreadsheetId!);
+      // 
+      // if (!metadata) {
+      //   console.log('📊 No sync metadata found, sync needed');
+      //   return true;
+      // }
 
       // For now, we'll sync based on time interval
       // You could enhance this to check Google Sheets revision history
-      const lastSync = new Date(metadata.last_sync);
-      const now = new Date();
-      const timeSinceLastSync = now.getTime() - lastSync.getTime();
-      
-      if (timeSinceLastSync >= this.config.intervalMs) {
-        console.log('📊 Sync interval reached, sync needed');
-        return true;
-      }
+      // TODO: Re-add cache layer
+      // const lastSync = new Date(metadata.last_sync);
+      // const now = new Date();
+      // const timeSinceLastSync = now.getTime() - lastSync.getTime();
+      // 
+      // if (timeSinceLastSync >= this.config.intervalMs) {
+      //   console.log('📊 Sync interval reached, sync needed');
+      //   return true;
+      // }
 
-      return false;
+      return true; // Always sync for now until cache layer is re-added
     } catch (error) {
       console.error('Error checking if sync needed:', error);
       return true; // Default to syncing on error

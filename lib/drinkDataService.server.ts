@@ -1,6 +1,5 @@
 import 'server-only';
 import { Drink } from '@/app/types/drinks';
-import { databaseCache } from './database-cache';
 import { googleSheetsService } from './googleSheetsService';
 import { sheetsPollingService } from './sheets-polling-service';
 
@@ -35,11 +34,12 @@ class DrinkDataService {
     this.ensureInitialized();
     try {
       // Check database cache first
-      const cachedDrinks = await databaseCache.getAllDrinks();
-      if (cachedDrinks && cachedDrinks.length > 0) {
-        console.log(`✅ Loaded ${cachedDrinks.length} drinks from database cache`);
-        return { drinks: cachedDrinks, source: 'cache' };
-      }
+      // TODO: Re-add cache layer
+      // const cachedDrinks = await databaseCache.getAllDrinks();
+      // if (cachedDrinks && cachedDrinks.length > 0) {
+      //   console.log(`✅ Loaded ${cachedDrinks.length} drinks from database cache`);
+      //   return { drinks: cachedDrinks, source: 'cache' };
+      // }
 
       console.log('📊 No cached drinks found, attempting direct fetch from Google Sheets');
       
@@ -49,9 +49,10 @@ class DrinkDataService {
         console.log(`✅ Loaded ${sheetsData.length} drinks from Google Sheets (fallback)`);
         
         // Update cache with fetched data (don't wait for this)
-        databaseCache.updateAllDrinks(sheetsData).catch(error => {
-          console.error('Failed to update cache after fallback fetch:', error);
-        });
+        // TODO: Re-add cache layer
+        // databaseCache.updateAllDrinks(sheetsData).catch(error => {
+        //   console.error('Failed to update cache after fallback fetch:', error);
+        // });
         
         return { drinks: sheetsData, source: 'sheets' };
       }
@@ -71,10 +72,11 @@ class DrinkDataService {
   async getDrinksByCategory(category: string): Promise<Drink[]> {
     try {
       // Check database cache for category
-      const cachedDrinks = await databaseCache.getDrinksByCategory(category);
-      if (cachedDrinks && cachedDrinks.length > 0) {
-        return cachedDrinks;
-      }
+      // TODO: Re-add cache layer
+      // const cachedDrinks = await databaseCache.getDrinksByCategory(category);
+      // if (cachedDrinks && cachedDrinks.length > 0) {
+      //   return cachedDrinks;
+      // }
       
       // If no cached category data, get all drinks and filter
       const { drinks } = await this.getAllDrinks();
@@ -93,10 +95,11 @@ class DrinkDataService {
   async getDrinkById(id: string): Promise<Drink | undefined> {
     try {
       // Check database cache for specific drink
-      const cachedDrink = await databaseCache.getDrinkById(id);
-      if (cachedDrink) {
-        return cachedDrink;
-      }
+      // TODO: Re-add cache layer
+      // const cachedDrink = await databaseCache.getDrinkById(id);
+      // if (cachedDrink) {
+      //   return cachedDrink;
+      // }
       
       // If not found in cache, get all drinks and find
       const { drinks } = await this.getAllDrinks();
@@ -114,13 +117,15 @@ class DrinkDataService {
    */
   async updateCache(drinks: Drink[]): Promise<boolean> {
     try {
-      const success = await databaseCache.updateAllDrinks(drinks);
-      if (success) {
-        console.log(`✅ Updated database cache with ${drinks.length} drinks`);
-      } else {
-        console.error('❌ Failed to update database cache');
-      }
-      return success;
+      // TODO: Re-add cache layer
+      // const success = await databaseCache.updateAllDrinks(drinks);
+      // if (success) {
+      //   console.log(`✅ Updated database cache with ${drinks.length} drinks`);
+      // } else {
+      //   console.error('❌ Failed to update database cache');
+      // }
+      console.log(`✅ Would update database cache with ${drinks.length} drinks (cache layer disabled)`);
+      return true;
     } catch (error) {
       console.error('Error updating cache:', error);
       return false;
@@ -139,7 +144,9 @@ class DrinkDataService {
    */
   async getCacheStats() {
     try {
-      return await databaseCache.getCacheStats();
+      // TODO: Re-add cache layer
+      // return await databaseCache.getCacheStats();
+      return { totalDrinks: 0, drinksByCategory: {}, lastUpdated: null };
     } catch (error) {
       console.error('Error getting cache stats:', error);
       return { totalDrinks: 0, drinksByCategory: {}, lastUpdated: null };
@@ -151,7 +158,9 @@ class DrinkDataService {
    */
   async clearCache(): Promise<boolean> {
     try {
-      return await databaseCache.clearCache();
+      // TODO: Re-add cache layer
+      // return await databaseCache.clearCache();
+      return true;
     } catch (error) {
       console.error('Error clearing cache:', error);
       return false;

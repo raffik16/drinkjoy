@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { drinkDataService } from '@/lib/drinkDataService.server';
-import { databaseCache } from '@/lib/database-cache';
 
 /**
  * Get sync status and cache statistics
@@ -17,9 +16,10 @@ export async function GET() {
     const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
     let sheetsMetadata = null;
     
-    if (spreadsheetId) {
-      sheetsMetadata = await databaseCache.getSheetsMetadata(spreadsheetId);
-    }
+    // TODO: Re-add cache layer
+    // if (spreadsheetId) {
+    //   sheetsMetadata = await databaseCache.getSheetsMetadata(spreadsheetId);
+    // }
 
     return NextResponse.json({
       success: true,
