@@ -11,6 +11,7 @@ import { PWAInstallPrompt } from '@/app/components/ui/PWAInstallPrompt';
 import { WeatherData } from '@/app/types/weather';
 import { WizardPreferences } from '@/app/types/wizard';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
+import { analytics } from '@/lib/analytics';
 
 export default function Home() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -37,6 +38,9 @@ export default function Home() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+
+    // Track page view for the app
+    analytics.pageView('/app', 'Drinkjoy Wizard');
 
     // Always show wizard on page load/refresh
     setShowWizard(true);
@@ -87,6 +91,9 @@ export default function Home() {
     setShowWizard(false);
     setIsWizardRetake(false); // Reset retake flag after completion
     localStorage.setItem('wizardPreferences', JSON.stringify(preferences));
+    
+    // Track when wizard results are shown (still on /app page)
+    analytics.pageView('/app', 'Wizard Results - Match Found');
     
     // Check if age verification is needed
     const ageVerified = localStorage.getItem('ageVerified');

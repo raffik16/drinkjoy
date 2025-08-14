@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Mail, MessageSquare, Send, MapPin, User } from 'lucide-react';
+import { analytics } from '@/lib/analytics';
 
 interface SignupModalProps {
   isOpen: boolean;
@@ -40,6 +41,10 @@ export function SignupModal({ isOpen, onClose }: SignupModalProps) {
 
       if (response.ok) {
         setIsSubmitted(true);
+        
+        // Track the signup submission in GA
+        analytics.trackSignupSubmission(formData.email, formData.business);
+        
         setTimeout(() => {
           onClose();
           setIsSubmitted(false);

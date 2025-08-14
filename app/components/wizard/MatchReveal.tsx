@@ -3,17 +3,27 @@
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import ColorSplashAnimation from '../animations/ColorSplashAnimation';
+import { analytics } from '@/lib/analytics';
+
+import { WizardPreferences } from '@/app/types/wizard';
 
 interface MatchRevealProps {
   onComplete: () => void;
+  preferences?: WizardPreferences;
+  matchCount?: number;
 }
 
-export default function MatchReveal({ onComplete }: MatchRevealProps) {
+export default function MatchReveal({ onComplete, preferences, matchCount = 0 }: MatchRevealProps) {
   const [showColorSplash, setShowColorSplash] = useState(true);
   const [countdown, setCountdown] = useState(5);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Track match reveal event
+    if (preferences) {
+      analytics.trackMatchReveal(matchCount, preferences);
+    }
+
     const colorSplashTimer = setTimeout(() => {
       setShowColorSplash(false);
     }, 2000);
@@ -39,7 +49,7 @@ export default function MatchReveal({ onComplete }: MatchRevealProps) {
       clearTimeout(colorSplashTimer);
       clearInterval(countdownInterval);
     };
-  }, [onComplete]);
+  }, [onComplete, preferences, matchCount]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-purple-50 to-rose-50 flex flex-col items-center justify-center p-4">

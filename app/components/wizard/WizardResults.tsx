@@ -18,6 +18,7 @@ import WizardFullResults from './WizardFullResults';
 import AllergiesModal from './AllergiesModal';
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { useSavingFeature } from '@/hooks/useSavingFeature';
+import { analytics } from '@/lib/analytics';
 
 // Witty title generator based on match count
 // function getWittyTitle(count: number): string {
@@ -73,6 +74,10 @@ export default function WizardResults({
     const recs = await matchDrinksToPreferences(updatedPrefs, localWeatherData, false, false, 50); // Get up to 50 matches
     setRecommendations(recs);
     setCurrentIndex(0);
+    
+    // Track wizard completion with actual match count and top match score
+    const topMatchScore = recs.length > 0 ? recs[0].score || 0 : 0;
+    analytics.trackWizardComplete(updatedPrefs, recs.length, topMatchScore);
     
     // Reset additional drinks when preferences change
     setAdditionalDrinks([]);
@@ -526,6 +531,7 @@ export default function WizardResults({
                     <div className="">
                       <LikeButton 
                         drinkId={currentDrink?.id || ''} 
+                        drinkName={currentDrink?.name || ''}
                         size="md"
                         className="shadow-lg"
                       />

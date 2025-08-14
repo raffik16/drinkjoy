@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Open_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { PWAManifest } from "@/components/PWAManifest";
+import GoogleAnalytics from "@/app/components/GoogleAnalytics";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body
         className={`${openSans.variable} ${inter.variable} antialiased`}
       >
+        <GoogleAnalytics />
         <PWAManifest />
         {children}
       </body>

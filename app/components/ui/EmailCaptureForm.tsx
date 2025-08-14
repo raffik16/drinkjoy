@@ -6,6 +6,7 @@ import { Mail, Check, X } from 'lucide-react';
 import { DrinkRecommendation } from '@/app/types/drinks';
 import { WizardPreferences } from '@/app/types/wizard';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
+import { analytics } from '@/lib/analytics';
 
 const WITTY_PHRASES = [
   "Don't let these liquid treasures swim away! 🐠",
@@ -51,6 +52,10 @@ export default function EmailCaptureForm({ matchedDrinks, preferences }: EmailCa
 
       if (response.ok) {
         setStatus('success');
+        
+        // Track the email save event in GA
+        analytics.trackEmailSaveMatches(email.trim(), matchedDrinks.length, preferences);
+        
         setEmail('');
         // Success message stays visible permanently
       } else {

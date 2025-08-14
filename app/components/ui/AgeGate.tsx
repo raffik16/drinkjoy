@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from './Button';
+import { analytics } from '@/lib/analytics';
 
 interface AgeGateProps {
   onVerified: (isOfAge: boolean) => void;
@@ -12,10 +13,12 @@ export const AgeGate: React.FC<AgeGateProps> = ({ onVerified }) => {
   const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleYes = () => {
+    analytics.trackAgeVerification(true);
     onVerified(true);
   };
 
   const handleNo = () => {
+    analytics.trackAgeVerification(false);
     setShowConfirmation(true);
   };
 

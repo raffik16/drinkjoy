@@ -7,6 +7,7 @@ import { useInactivityDetection } from '@/app/hooks/useInactivityDetection';
 import { useRealtimeStats } from '@/app/hooks/useRealtimeStats';
 import { getSessionId } from '@/lib/session';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
+import { analytics } from '@/lib/analytics';
 
 // Temporary localStorage functions until Supabase table is created
 const ORDERS_KEY = 'drink_orders_temp';
@@ -107,11 +108,17 @@ export default function OrderButton({ drinkId, drinkName, className = '' }: Orde
         addLocalOrder(drinkId);
         setLocallyOrdered(true);
         setPromptState('feedback');
+        
+        // Track the order event in GA
+        analytics.trackDrinkOrder(drinkId, drinkName, sessionId);
       } else {
         // If Supabase fails (table doesn't exist), use localStorage only
         addLocalOrder(drinkId);
         setLocallyOrdered(true);
         setPromptState('feedback');
+        
+        // Track the order event in GA even if Supabase fails
+        analytics.trackDrinkOrder(drinkId, drinkName, sessionId);
       }
     } catch (error) {
       console.error('Error recording order:', error);
@@ -119,6 +126,9 @@ export default function OrderButton({ drinkId, drinkName, className = '' }: Orde
       addLocalOrder(drinkId);
       setLocallyOrdered(true);
       setPromptState('feedback');
+      
+      // Track the order event in GA even on error
+      analytics.trackDrinkOrder(drinkId, drinkName, sessionId);
     }
   };
 

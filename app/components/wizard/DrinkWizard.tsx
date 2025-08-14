@@ -14,6 +14,7 @@ import ColorSplashAnimation from '../animations/ColorSplashAnimation';
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { ChevronLeft, Bookmark } from 'lucide-react';
 import { useSavingFeature } from '@/hooks/useSavingFeature';
+import { analytics } from '@/lib/analytics';
 
 interface DrinkWizardProps {
   onComplete: (preferences: WizardPreferences) => void;
@@ -85,6 +86,13 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
     setPreferences(updatedPreferences);
     setNavigationDirection('forward');
 
+    // Track wizard step completion
+    analytics.trackWizardStep(
+      currentQuestion + 1, 
+      question.id, 
+      question.id === 'allergies' ? updatedPreferences.allergies || [] : value
+    );
+
     if (currentQuestion < wizardQuestions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } else {
@@ -110,6 +118,8 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
   };
 
   const handleMatchRevealComplete = () => {
+    // Track wizard completion (we'll add match count when we have it)
+    analytics.trackWizardComplete(preferences, 0); // Match count will be updated in results component
     onComplete(preferences);
   };
 
@@ -197,6 +207,8 @@ export default function DrinkWizard({ onComplete, isRetake = false }: DrinkWizar
     return (
       <MatchReveal 
         onComplete={handleMatchRevealComplete}
+        preferences={preferences}
+        matchCount={0}
       />
     );
   }

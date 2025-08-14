@@ -4,14 +4,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { getSessionId } from '@/lib/session';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
+import { analytics } from '@/lib/analytics';
 
 interface LikeButtonProps {
   drinkId: string;
+  drinkName?: string;
   className?: string;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export default function LikeButton({ drinkId, className = '', size = 'md' }: LikeButtonProps) {
+export default function LikeButton({ drinkId, drinkName = '', className = '', size = 'md' }: LikeButtonProps) {
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -80,6 +82,9 @@ export default function LikeButton({ drinkId, className = '', size = 'md' }: Lik
         // Use server response for authoritative state
         setIsLiked(data.liked);
         setLikeCount(data.likeCount);
+        
+        // Track the like event in GA
+        analytics.trackDrinkLike(drinkId, drinkName, data.liked, data.likeCount);
       } else {
         // Revert optimistic update on error
         setIsLiked(isLiked);
