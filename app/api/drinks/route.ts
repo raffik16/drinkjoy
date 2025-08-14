@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllDrinks, getDrinkById, filterDrinks } from '@/lib/drinks.server';
 import { DrinkFilters } from '@/app/types/drinks';
+import { barDataService } from '@/lib/barDataService.server';
+import { barMenuService } from '@/lib/barMenuService';
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const drinkId = searchParams.get('id');
+    const barId = searchParams.get('bar_id');
 
     // If ID is provided, return single drink
     if (drinkId) {
@@ -52,7 +55,46 @@ export async function GET(request: NextRequest) {
       filters.search = search;
     }
 
-    const allDrinks = await getAllDrinks();
+    // Get drinks from specific bar or default source
+    let allDrinks;
+    
+    if (barId) {
+      console.log(`🍹 Loading drinks for bar ${barId}`);
+      
+      // Get bar information
+      const bar = await barDataService.getBarById(barId);
+      if (!bar) {
+        return NextResponse.json(
+          { error: 'Bar not found' },
+          { status: 404 }
+        );
+      }
+      
+      if (!bar.active) {
+        return NextResponse.json(
+          { error: 'Bar is currently inactive' },
+          { status: 404 }
+        );
+      }
+      
+      // Fetch drinks from bar's specific sheet using the new service
+      try {
+        const barMenuResponse = await barMenuService.getBarMenu(barId, bar.menu_sheet_id);
+        allDrinks = barMenuResponse.drinks;
+        
+        console.log(`✅ Loaded ${allDrinks.length} drinks from ${bar.name}'s menu (source: ${barMenuResponse.source})`);
+      } catch (error) {
+        console.error(`Failed to load menu for bar ${barId}:`, error);
+        return NextResponse.json(
+          { error: 'Failed to load bar menu' },
+          { status: 500 }
+        );
+      }
+    } else {
+      // Use default drink source
+      allDrinks = await getAllDrinks();
+    }
+
     const filteredDrinks = Object.keys(filters).length > 0
       ? filterDrinks(allDrinks, filters)
       : allDrinks;

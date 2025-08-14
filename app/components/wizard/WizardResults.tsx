@@ -19,6 +19,9 @@ import AllergiesModal from './AllergiesModal';
 import { MyDrinksPanel } from '@/app/components/my-drinks/MyDrinksPanel';
 import { useSavingFeature } from '@/hooks/useSavingFeature';
 import { analytics } from '@/lib/analytics';
+import { useBar, useCurrentBar } from '@/app/contexts/BarContext';
+import { BarSelectionFlow } from '@/app/components/bars/BarSelectionFlow';
+import { BarSwitcher } from '@/app/components/bars/BarSwitcher';
 
 // Witty title generator based on match count
 // function getWittyTitle(count: number): string {
@@ -66,39 +69,100 @@ export default function WizardResults({
   const [showMyDrinksPanel, setShowMyDrinksPanel] = useState(false);
   const [hasSavedDrinks, setHasSavedDrinks] = useState(false);
   const [triggerAnimation, setTriggerAnimation] = useState(false);
+  const [showBarSelection, setShowBarSelection] = useState(true);
   const isSavingEnabled = useSavingFeature();
 
-  const updateRecommendations = useCallback(async () => {
+  // Bar context
+  const currentBar = useCurrentBar();
+  const { state } = useBar();
+
+  // Handle bar selection completion
+  const handleBarSelectionComplete = useCallback(() => {
+    console.log('🍻 Bar selection completed, loading recommendations...');
+    setShowBarSelection(false);
+    // Load recommendations will be triggered by the useEffect watching currentBar
+  }, []);
+
+  // Bar selection skip is no longer available - bar selection is required
+
+  // Handle bar switching from the BarSwitcher component
+  const handleBarChange = useCallback((barId: string) => {
+    console.log(`🔄 Bar changed to: ${barId}, reloading recommendations...`);
+    // Reload recommendations with the new bar
+    updateRecommendationsOverride();
+  }, []);
+
+  // Override updateRecommendations to handle no bar scenario
+  const updateRecommendationsOverride = useCallback(async () => {
     setIsLoadingRecommendations(true);
+    
     const updatedPrefs = { ...preferences, useWeather, allergies: currentAllergies };
-    const recs = await matchDrinksToPreferences(updatedPrefs, localWeatherData, false, false, 50); // Get up to 50 matches
-    setRecommendations(recs);
-    setCurrentIndex(0);
     
-    // Track wizard completion with actual match count and top match score
-    const topMatchScore = recs.length > 0 ? recs[0].score || 0 : 0;
-    analytics.trackWizardComplete(updatedPrefs, recs.length, topMatchScore);
-    
-    // Reset additional drinks when preferences change
-    setAdditionalDrinks([]);
-    // Reset handled above
-    
-    // Always reset the no more drinks card when updating recommendations
-    setShowNoMoreDrinksCard(false);
-    
-    // Reset the expanded flag when preferences change
-    setHasExpandedToAllCategories(false);
-    
-    // Reset absolute end flag when recommendations update
-    setIsAtAbsoluteEnd(false);
-    
-    // If we have exhausted all drinks in the category (found very few), show the special card
-    if (recs.length === 0 || (recs.length < 5 && preferences.category !== 'any')) {
-      setShowNoMoreDrinksCard(true);
+    try {
+      // Try with current bar first, fallback to default if needed
+      const barId = currentBar?.id;
+      const recs = await matchDrinksToPreferences(updatedPrefs, localWeatherData, false, false, 50, barId);
+      
+      setRecommendations(recs);
+      setCurrentIndex(0);
+      
+      // Track wizard completion with actual match count and top match score
+      const topMatchScore = recs.length > 0 ? recs[0].score || 0 : 0;
+      analytics.trackWizardComplete(updatedPrefs, recs.length, topMatchScore);
+      
+      // Reset additional drinks when preferences change
+      setAdditionalDrinks([]);
+      setShowNoMoreDrinksCard(false);
+      setHasExpandedToAllCategories(false);
+      setIsAtAbsoluteEnd(false);
+      
+      // If we have exhausted all drinks in the category (found very few), show the special card
+      if (recs.length === 0 || (recs.length < 5 && preferences.category !== 'any')) {
+        setShowNoMoreDrinksCard(true);
+      }
+      
+    } catch (error) {
+      console.error('Failed to load recommendations:', error);
+      // Fallback: try without bar ID
+      if (currentBar) {
+        console.log('🔄 Retrying without bar-specific menu...');
+        try {
+          const recs = await matchDrinksToPreferences(updatedPrefs, localWeatherData, false, false, 50);
+          setRecommendations(recs);
+          setCurrentIndex(0);
+          
+          const topMatchScore = recs.length > 0 ? recs[0].score || 0 : 0;
+          analytics.trackWizardComplete(updatedPrefs, recs.length, topMatchScore);
+        } catch (fallbackError) {
+          console.error('Fallback also failed:', fallbackError);
+          // Show empty state or error message
+          setRecommendations([]);
+        }
+      } else {
+        // No fallback available
+        setRecommendations([]);
+      }
     }
     
     setIsLoadingRecommendations(false);
-  }, [preferences, useWeather, localWeatherData, currentAllergies]);
+  }, [preferences, useWeather, localWeatherData, currentAllergies, currentBar]);
+
+  // Use the override as the main function
+  const updateRecommendations = updateRecommendationsOverride;
+
+  // Load recommendations when bar is selected
+  useEffect(() => {
+    if (currentBar && !showBarSelection) {
+      updateRecommendations();
+    }
+  }, [currentBar, showBarSelection, updateRecommendations]);
+
+  // Initialize bar selection state based on current bar
+  useEffect(() => {
+    if (currentBar) {
+      setShowBarSelection(false);
+    }
+  }, [currentBar]);
 
 
   const handleAllergiesUpdate = (newAllergies: AllergyType[]) => {
@@ -115,7 +179,8 @@ export default function WizardResults({
       const additional = await getAdditionalDrinksFromAllCategories(
         { ...preferences, useWeather, allergies: currentAllergies },
         excludeIds,
-        15 // Load 15 more at once for better UX
+        15, // Load 15 more at once for better UX
+        currentBar?.id
       );
       
       if (additional.length > 0) {
@@ -316,6 +381,19 @@ export default function WizardResults({
     // If neither threshold is met, the card will snap back to center
   };
 
+  // Show bar selection flow if no bar is selected
+  if (showBarSelection) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-rose-50">
+        <BarSelectionFlow
+          onComplete={handleBarSelectionComplete}
+          autoStart={true}
+          showHeader={false}
+        />
+      </div>
+    );
+  }
+
   // Show loading state while recommendations are being fetched
   if (isLoadingRecommendations) {
     return (
@@ -357,16 +435,16 @@ export default function WizardResults({
     >
       <div>
         {/* Header */}
-        <div className="flex flex-col justify-center items-center p-2">
-          {/* <h2 className="text-sm font-bold text-gray-800">
-            {preferences.category === 'featured' ? '⭐ Featured Drinks' : getWittyTitle(allDrinks.length)}
-          </h2> */}
-          {isAtAbsoluteEnd && currentIndex === allDrinks.length - 1 && (
-            <p className="text-xs text-gray-500 mt-1">
-              Swipe or click next to start over! 🔄
-            </p>
-          )}
-        </div>
+        {/* Bar Switcher - always show when bar selection is complete */}
+        {!showBarSelection && (
+          <div className="flex flex-col justify-center items-center p-1">
+            <BarSwitcher 
+              onBarChange={handleBarChange}
+              className=""
+              showLocation={true}
+            />
+          </div>
+        )}
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center px-2 relative">

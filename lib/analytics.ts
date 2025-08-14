@@ -62,11 +62,9 @@ export const analytics = {
     const eventData = {
       event_category: 'drinks',
       event_label: drinkName,
-      custom_parameters: {
-        drink_id: drinkId,
-        drink_name: drinkName,
-        session_id: sessionId,
-      },
+      drink_id: drinkId,
+      drink_name: drinkName,
+      session_id: sessionId,
       value: 1,
     };
     
@@ -81,12 +79,10 @@ export const analytics = {
     window.gtag('event', liked ? 'drink_like' : 'drink_unlike', {
       event_category: 'engagement',
       event_label: drinkName,
-      custom_parameters: {
-        drink_id: drinkId,
-        drink_name: drinkName,
-        like_count: likeCount,
-        action: liked ? 'like' : 'unlike',
-      },
+      drink_id: drinkId,
+      drink_name: drinkName,
+      like_count: likeCount,
+      action: liked ? 'like' : 'unlike',
       value: liked ? 1 : -1,
     });
   },
@@ -98,15 +94,13 @@ export const analytics = {
     window.gtag('event', 'email_save_matches', {
       event_category: 'email',
       event_label: 'save_matches',
-      custom_parameters: {
-        match_count: matchCount,
-        category_preference: preferences.category,
-        flavor_preference: preferences.flavor,
-        strength_preference: preferences.strength,
-        occasion_preference: preferences.occasion,
-        allergies: preferences.allergies?.join(',') || 'none',
-        has_allergies: preferences.allergies && preferences.allergies.length > 0,
-      },
+      match_count: matchCount,
+      category_preference: preferences.category,
+      flavor_preference: preferences.flavor,
+      strength_preference: preferences.strength,
+      occasion_preference: preferences.occasion,
+      allergies: preferences.allergies?.join(',') || 'none',
+      has_allergies: preferences.allergies && preferences.allergies.length > 0,
       value: matchCount,
     });
   },
@@ -118,10 +112,8 @@ export const analytics = {
     window.gtag('event', 'signup_submission', {
       event_category: 'email',
       event_label: 'business_signup',
-      custom_parameters: {
-        has_business_name: !!businessName,
-        signup_type: 'business_interest',
-      },
+      has_business_name: !!businessName,
+      signup_type: 'business_interest',
       value: 1,
     });
   },
@@ -135,12 +127,10 @@ export const analytics = {
     window.gtag('event', 'wizard_step_complete', {
       event_category: 'wizard',
       event_label: stepId,
-      custom_parameters: {
-        step_number: stepNumber,
-        step_id: stepId,
-        answer: answerString,
-        wizard_progress: `${stepNumber}/5`,
-      },
+      step_number: stepNumber,
+      step_id: stepId,
+      answer: answerString,
+      wizard_progress: `${stepNumber}/5`,
       value: stepNumber,
     });
   },
@@ -152,17 +142,15 @@ export const analytics = {
     window.gtag('event', 'wizard_complete', {
       event_category: 'wizard',
       event_label: 'completed',
-      custom_parameters: {
-        category: preferences.category,
-        flavor: preferences.flavor,
-        strength: preferences.strength,
-        occasion: preferences.occasion,
-        allergies: preferences.allergies?.join(',') || 'none',
-        has_allergies: preferences.allergies && preferences.allergies.length > 0,
-        match_count: matchCount,
-        top_match_score: topMatchScore || 0,
-        completion_rate: 100,
-      },
+      category: preferences.category,
+      flavor: preferences.flavor,
+      strength: preferences.strength,
+      occasion: preferences.occasion,
+      allergies: preferences.allergies?.join(',') || 'none',
+      has_allergies: preferences.allergies && preferences.allergies.length > 0,
+      match_count: matchCount,
+      top_match_score: topMatchScore || 0,
+      completion_rate: 100,
       value: matchCount,
     });
   },
@@ -174,13 +162,11 @@ export const analytics = {
     window.gtag('event', 'match_reveal', {
       event_category: 'wizard',
       event_label: 'matches_revealed',
-      custom_parameters: {
-        match_count: matchCount,
-        category: preferences.category,
-        flavor: preferences.flavor,
-        strength: preferences.strength,
-        occasion: preferences.occasion,
-      },
+      match_count: matchCount,
+      category: preferences.category,
+      flavor: preferences.flavor,
+      strength: preferences.strength,
+      occasion: preferences.occasion,
       value: matchCount,
     });
   },
@@ -192,9 +178,7 @@ export const analytics = {
     window.gtag('event', 'age_verification', {
       event_category: 'onboarding',
       event_label: verified ? 'verified' : 'declined',
-      custom_parameters: {
-        verified: verified,
-      },
+      verified: verified,
       value: verified ? 1 : 0,
     });
   },
@@ -206,12 +190,10 @@ export const analytics = {
     window.gtag('event', 'weather_integration', {
       event_category: 'features',
       event_label: 'weather_data',
-      custom_parameters: {
-        location_granted: locationGranted,
-        has_weather_data: !!weatherData,
-        weather_condition: weatherData?.weather?.[0]?.main || 'unknown',
-        temperature: weatherData?.main?.temp || 0,
-      },
+      location_granted: locationGranted,
+      has_weather_data: !!weatherData,
+      weather_condition: weatherData?.weather?.[0]?.main || 'unknown',
+      temperature: weatherData?.main?.temp || 0,
       value: locationGranted ? 1 : 0,
     });
   },
@@ -223,9 +205,7 @@ export const analytics = {
     window.gtag('event', 'pwa_install', {
       event_category: 'engagement',
       event_label: action,
-      custom_parameters: {
-        install_action: action,
-      },
+      install_action: action,
       value: action === 'accepted' ? 1 : 0,
     });
   },
@@ -237,9 +217,7 @@ export const analytics = {
     window.gtag('event', 'chat_interaction', {
       event_category: 'engagement',
       event_label: action,
-      custom_parameters: {
-        chat_action: action,
-      },
+      chat_action: action,
       value: 1,
     });
   },
@@ -251,7 +229,7 @@ export const analytics = {
     window.gtag('event', eventName, {
       event_category: category,
       event_label: label,
-      custom_parameters: customParams,
+      ...customParams,
       value: value,
     });
   },

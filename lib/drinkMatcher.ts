@@ -33,9 +33,32 @@ export async function matchDrinksToPreferences(
   weatherData?: WeatherData | null,
   isMetricUnit: boolean = false,
   debug: boolean = false,
-  limit: number = 10
+  limit: number = 10,
+  barId?: string
 ): Promise<DrinkRecommendation[]> {
-  const { drinks: allDrinks } = await drinkDataService.getAllDrinks();
+  // Get drinks from specific bar or default source
+  let allDrinks: any[];
+  
+  if (barId) {
+    console.log(`🍹 Loading drinks for bar ${barId}`);
+    try {
+      const response = await fetch(`/api/drinks?bar_id=${barId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load bar menu: ${response.statusText}`);
+      }
+      const data = await response.json();
+      allDrinks = data.drinks || [];
+      console.log(`✅ Loaded ${allDrinks.length} drinks from bar menu`);
+    } catch (error) {
+      console.error('Failed to load bar-specific drinks:', error);
+      // Fallback to default drinks
+      const { drinks } = await drinkDataService.getAllDrinks();
+      allDrinks = drinks;
+    }
+  } else {
+    const { drinks } = await drinkDataService.getAllDrinks();
+    allDrinks = drinks;
+  }
   let scores: PreferenceScore[] = [];
   
   // Get popularity data
@@ -82,8 +105,8 @@ export async function matchDrinksToPreferences(
       };
 
       const preferredFlavors = flavorMap[preferences.flavor] || [];
-      const matchingFlavors = drink.flavor_profile.filter(f => 
-        preferredFlavors.some(pf => f.toLowerCase().includes(pf))
+      const matchingFlavors = drink.flavor_profile.filter((f: string) => 
+        preferredFlavors.some((pf: string) => f.toLowerCase().includes(pf))
       );
 
       if (matchingFlavors.length > 0) {
@@ -458,9 +481,30 @@ export function getMatchMessage(score: number): string {
 export async function getAdditionalDrinks(
   preferences: WizardPreferences,
   excludeIds: string[],
-  limit: number = 20
+  limit: number = 20,
+  barId?: string
 ): Promise<DrinkRecommendation[]> {
-  const { drinks: allDrinks } = await drinkDataService.getAllDrinks();
+  // Get drinks from specific bar or default source
+  let allDrinks: any[];
+  
+  if (barId) {
+    try {
+      const response = await fetch(`/api/drinks?bar_id=${barId}`);
+      if (!response.ok) {
+        throw new Error(`Failed to load bar menu: ${response.statusText}`);
+      }
+      const data = await response.json();
+      allDrinks = data.drinks || [];
+    } catch (error) {
+      console.error('Failed to load bar-specific drinks for additional:', error);
+      // Fallback to default drinks
+      const { drinks } = await drinkDataService.getAllDrinks();
+      allDrinks = drinks;
+    }
+  } else {
+    const { drinks } = await drinkDataService.getAllDrinks();
+    allDrinks = drinks;
+  }
   
   // Get popularity data
   const popularDrinks = await getPopularDrinks();
@@ -503,8 +547,8 @@ export async function getAdditionalDrinks(
       };
       
       const preferredFlavors = flavorMap[preferences.flavor] || [];
-      const matchingFlavors = drink.flavor_profile.filter(f => 
-        preferredFlavors.some(pf => f.toLowerCase().includes(pf))
+      const matchingFlavors = drink.flavor_profile.filter((f: string) => 
+        preferredFlavors.some((pf: string) => f.toLowerCase().includes(pf))
       );
       
       if (matchingFlavors.length > 0) {
@@ -567,7 +611,8 @@ export async function getAdditionalDrinks(
 export async function getAdditionalDrinksFromAllCategories(
   preferences: WizardPreferences,
   excludeIds: string[],
-  limit: number = 10
+  limit: number = 10,
+  barId?: string
 ): Promise<DrinkRecommendation[]> {
   // Create a new preferences object that opens up the category but keeps allergies
   const expandedPrefs = {
@@ -577,5 +622,5 @@ export async function getAdditionalDrinksFromAllCategories(
   };
   
   // Use the existing getAdditionalDrinks function with expanded preferences
-  return getAdditionalDrinks(expandedPrefs, excludeIds, limit);
+  return getAdditionalDrinks(expandedPrefs, excludeIds, limit, barId);
 }

@@ -3,6 +3,7 @@ import { Open_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { PWAManifest } from "@/components/PWAManifest";
 import GoogleAnalytics from "@/app/components/GoogleAnalytics";
+import { BarProvider } from "@/app/contexts/BarContext";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -79,7 +80,9 @@ export default function RootLayout({
       >
         <GoogleAnalytics />
         <PWAManifest />
-        {children}
+        <BarProvider>
+          {children}
+        </BarProvider>
       </body>
     </html>
   );
