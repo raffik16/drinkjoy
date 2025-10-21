@@ -3,6 +3,8 @@ import { Open_Sans, Inter } from "next/font/google";
 import "./globals.css";
 import { PWAManifest } from "@/components/PWAManifest";
 import GoogleAnalytics from "@/app/components/GoogleAnalytics";
+import { StructuredData } from "@/app/components/StructuredData";
+import { WebVitals } from "@/app/components/WebVitals";
 import { BarProvider } from "@/app/contexts/BarContext";
 
 const openSans = Open_Sans({
@@ -80,6 +82,8 @@ export default function RootLayout({
       >
         <GoogleAnalytics />
         <PWAManifest />
+        <StructuredData />
+        <WebVitals />
         <BarProvider>
           {children}
         </BarProvider>

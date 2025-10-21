@@ -8,6 +8,7 @@ import { AgeGate } from '@/app/components/ui/AgeGate';
 import DrinkWizard from '@/app/components/wizard/DrinkWizard';
 import WizardResults from '@/app/components/wizard/WizardResults';
 import { PWAInstallPrompt } from '@/app/components/ui/PWAInstallPrompt';
+import { ExitIntentModal } from '@/app/components/conversion/ExitIntentModal';
 import { WeatherData } from '@/app/types/weather';
 import { WizardPreferences } from '@/app/types/wizard';
 import ColorSplashAnimation from '@/app/components/animations/ColorSplashAnimation';
@@ -202,10 +203,13 @@ export default function Home() {
       </main>
 
       <Footer />
-      
+
 
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+
+      {/* Exit Intent Modal for Conversion */}
+      <ExitIntentModal />
     </div>
   );
 }

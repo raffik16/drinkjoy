@@ -1,0 +1,15 @@
+# Drinkjoy Robots.txt
+# Allow all search engines to crawl the site
+
+User-agent: *
+Allow: /
+
+# Disallow admin and API routes
+Disallow: /api/
+Disallow: /admin/
+
+# Sitemap location
+Sitemap: https://www.drinkjoy.app/sitemap.xml
+
+# Crawl delay for well-behaved bots
+Crawl-delay: 1
